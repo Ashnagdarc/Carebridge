@@ -1,0 +1,69 @@
+"use client";
+
+import React, { InputHTMLAttributes } from "react";
+
+interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label: string;
+  error?: string;
+  helperText?: string;
+}
+
+/**
+ * Apple HIG Form Input Component
+ * - Clear label above input
+ * - Error state with red border and error message
+ * - Helper text for guidance
+ */
+export function FormInput({
+  label,
+  error,
+  helperText,
+  id,
+  className,
+  ...props
+}: FormInputProps) {
+  const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, "-")}`;
+
+  return (
+    <div className="w-full">
+      <label
+        htmlFor={inputId}
+        className="block text-sm font-medium text-foreground mb-2"
+      >
+        {label}
+      </label>
+      <input
+        id={inputId}
+        className={`w-full px-4 py-3 rounded-lg border-2 transition-colors focus:outline-none focus:border-info
+          ${
+            error
+              ? "border-error bg-red-50 text-error placeholder-red-300"
+              : "border-tertiary bg-secondary text-foreground placeholder-gray-500 focus:bg-white"
+          }
+          ${className}`}
+        aria-invalid={!!error}
+        aria-describedby={
+          error
+            ? `${inputId}-error`
+            : helperText
+              ? `${inputId}-helper`
+              : undefined
+        }
+        {...props}
+      />
+      {error && (
+        <p
+          id={`${inputId}-error`}
+          className="mt-2 text-sm text-error font-medium"
+        >
+          {error}
+        </p>
+      )}
+      {helperText && !error && (
+        <p id={`${inputId}-helper`} className="mt-2 text-xs text-gray-600">
+          {helperText}
+        </p>
+      )}
+    </div>
+  );
+}

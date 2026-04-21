@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: carebridge-postgres
+    environment:
+      POSTGRES_USER: carebridge_user
+      POSTGRES_PASSWORD: carebridge_dev_password
+      POSTGRES_DB: carebridge_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U carebridge_user -d carebridge_db']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - carebridge-network
+
+  middleware:
+    image: node:18-alpine
+    container_name: carebridge-middleware
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://carebridge_user:carebridge_dev_password@postgres:5432/carebridge_db
+      JWT_SECRET: dev_jwt_secret_key_change_in_production
+      PATIENT_APP_URL: http://localhost:3001
+      PORT: 3000
+    ports:
+      - '3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./packages/middleware:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npx prisma generate && npx prisma db push --skip-generate && npm run dev"
+    networks:
+      - carebridge-network
+
+  patient-app:
+    image: node:18-alpine
+    container_name: carebridge-patient-app
+    environment:
+      NODE_ENV: development
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_API_VERSION: v1
+    ports:
+      - '3001:3001'
+    depends_on:
+      - middleware
+    volumes:
+      - ./packages/patient-pwa:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --port 3001"
+    networks:
+      - carebridge-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  carebridge-network:
+    driver: bridge

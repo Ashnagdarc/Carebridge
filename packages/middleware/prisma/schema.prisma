@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Patient {
+  id                String                @id @default(cuid())
+  externalId        String                @unique // Hospital's patient ID
+  email             String                @unique
+  passwordHash      String
+  firstName         String
+  lastName          String
+  dateOfBirth       DateTime?
+  gender            String?
+  phoneNumber       String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  consentRequests   ConsentRequest[]
+  consentRecords    ConsentRecord[]
+  auditLogs         AuditLog[]
+  sessions          Session[]
+  dataRequests      DataRequest[]
+
+  @@index([email])
+  @@index([externalId])
+}
+
+model Hospital {
+  id                String                @id @default(cuid())
+  name              String                @unique
+  code              String                @unique // Hospital code (e.g., HOSPITAL_A, HOSPITAL_B)
+  clientId          String                @unique // OAuth2 Client ID
+  clientSecret      String // OAuth2 Client Secret (encrypted at rest)
+  redirectUri       String // OAuth2 Redirect URI
+  endpoint          String                @unique // Hospital's data endpoint
+  publicKey         String? // For verifying hospital signatures
+  ipWhitelist       String? // Comma-separated IPs
+  isActive          Boolean               @default(true)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  consentRequests   ConsentRequest[]
+  auditLogs         AuditLog[]
+  hospitalMappings  HospitalMapping[]
+  sourceDataRequests DataRequest[]         @relation("source")
+  targetDataRequests DataRequest[]         @relation("target")
+
+  @@index([code])
+  @@index([clientId])
+}
+
+model ConsentRequest {
+  id                String                @id @default(cuid())
+  patientId         String
+  patient           Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  requestingHospitalId String
+  requestingHospital Hospital              @relation(fields: [requestingHospitalId], references: [id], onDelete: Cascade)
+  dataType          String // "allergies", "medications", "lab_results", etc.
+  description       String?
+  status            String                @default("pending") // pending, approved, rejected, expired
+  expiresAt         DateTime?
+  approvedAt        DateTime?
+  rejectedAt        DateTime?
+  approvalCode      String?               @unique // For patient to approve via email/SMS
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  consentRecords    ConsentRecord[]
+
+  @@index([patientId])
+  @@index([requestingHospitalId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ConsentRecord {
+  id                String                @id @default(cuid())
+  consentRequestId  String
+  consentRequest    ConsentRequest        @relation(fields: [consentRequestId], references: [id], onDelete: Cascade)
+  patientId         String
+  patient           Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  requestingHospitalId String
+  sourceHospitalId  String // Hospital where data came from
+  dataType          String
+  accessCount       Int                   @default(0)
+  lastAccessedAt    DateTime?
+  revokedAt         DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  accessLogs        AuditLog[]
+  dataRequests      DataRequest[]         @relation("consentRecordDataRequest")
+
+  @@index([patientId])
+  @@index([requestingHospitalId])
+  @@index([createdAt])
+}
+
+model AuditLog {
+  id                String                @id @default(cuid())
+  action            String // "consent_requested", "consent_approved", "data_accessed", etc.
+  resourceType      String // "consent", "patient", "hospital", etc.
+  resourceId        String
+  patientId         String?
+  patient           Patient?              @relation(fields: [patientId], references: [id], onDelete: SetNull)
+  hospitalId        String?
+  hospital          Hospital?             @relation(fields: [hospitalId], references: [id], onDelete: SetNull)
+  consentRecordId   String?
+  consentRecord     ConsentRecord?        @relation(fields: [consentRecordId], references: [id], onDelete: SetNull)
+  details           String? // JSON-encoded details
+  ipAddress         String?
+  userAgent         String?
+  status            String // "success", "failed", "unauthorized", etc.
+  createdAt         DateTime              @default(now())
+
+  @@index([patientId])
+  @@index([hospitalId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([resourceId])
+}
+
+model HospitalMapping {
+  id                String                @id @default(cuid())
+  hospitalId        String
+  hospital          Hospital              @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  externalCode      String // Hospital's internal code for this hospital
+  externalEndpoint  String? // Hospital's data endpoint
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@unique([hospitalId, externalCode])
+  @@index([hospitalId])
+}
+
+model Session {
+  id                String                @id @default(cuid())
+  patientId         String
+  patient           Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  token             String                @unique
+  refreshToken      String?               @unique
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  ipAddress         String?
+  userAgent         String?
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([patientId])
+  @@index([token])
+  @@index([expiresAt])
+}
+
+model DataRequest {
+  id                String                @id @default(cuid())
+  patientId         String
+  patient           Patient               @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sourceHospitalId  String
+  sourceHospital    Hospital              @relation("source", fields: [sourceHospitalId], references: [id], onDelete: Cascade)
+  targetHospitalId  String
+  targetHospital    Hospital              @relation("target", fields: [targetHospitalId], references: [id], onDelete: Cascade)
+  dataTypes         String[] // Array of data types requested
+  purpose           String?
+  notes             String?
+  status            String                @default("pending") // pending, in_progress, completed, failed, cancelled, timeout
+  requestedAt       DateTime              @default(now())
+  completedAt       DateTime?
+  failureReason     String?
+  responseData      String? // JSON-encoded response data
+  consentRecordId   String?
+  consentRecord     ConsentRecord?        @relation("consentRecordDataRequest", fields: [consentRecordId], references: [id], onDelete: SetNull)
+  latencyMs         Int? // Response time in milliseconds
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  @@index([patientId])
+  @@index([sourceHospitalId])
+  @@index([targetHospitalId])
+  @@index([status])
+  @@index([createdAt])
+}

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <!-- Maskable icon: safe zone is the inner circle -->
+  <circle cx="96" cy="96" r="96" fill="#000000"/>
+  <circle cx="96" cy="96" r="75" fill="#ffffff"/>
+  <path d="M 96 65 L 96 127 M 65 96 L 127 96" stroke="#000000" stroke-width="6" stroke-linecap="round"/>
+</svg>
