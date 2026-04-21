@@ -98,6 +98,15 @@ function ConsentInboxContent() {
               </p>
             </div>
 
+            <Button
+              variant="secondary"
+              size="sm"
+              className="mb-4"
+              onClick={() => router.push("/consents/history")}
+            >
+              View History & Access Logs
+            </Button>
+
             {requests.map((request) => (
               <ConsentRequestCard
                 key={request.id}

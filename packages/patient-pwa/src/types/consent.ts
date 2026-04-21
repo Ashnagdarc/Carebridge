@@ -45,4 +45,15 @@ export interface ConsentRecord {
   revokedAt?: string;
 }
 
+export interface AccessLogEntry {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  hospitalId?: string;
+  status: string;
+  details?: string;
+  createdAt: string;
+}
+
 export type ExpiryOption = 7 | 30 | 365 | "custom";

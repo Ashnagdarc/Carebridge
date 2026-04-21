@@ -233,4 +233,58 @@ describe("Consent API", () => {
       await expect(consentApi.revokeConsent("consent-1")).rejects.toThrow();
     });
   });
+
+  describe("getPatientAccessLogs", () => {
+    it("fetches paginated access logs", async () => {
+      const mockResponse = {
+        logs: [
+          {
+            id: "audit-1",
+            action: "data_request",
+            resourceType: "consent_record",
+            resourceId: "consent-1",
+            hospitalId: "hospital-1",
+            status: "success",
+            details: "{\"dataType\":\"allergies\"}",
+            createdAt: "2026-04-20T00:00:00Z",
+          },
+        ],
+        total: 25,
+        skip: 0,
+        take: 20,
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      localStorage.setItem("carebridge_access_token", "test-token");
+      const result = await consentApi.getPatientAccessLogs(0, 20);
+
+      expect(result.logs).toHaveLength(1);
+      expect(result.total).toBe(25);
+      expect(result.hasMore).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/audit/patient-logs?skip=0&take=20"),
+        expect.objectContaining({
+          method: "GET",
+          headers: expect.objectContaining({
+            Authorization: "Bearer test-token",
+          }),
+        })
+      );
+    });
+
+    it("throws error if fetching access logs fails", async () => {
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: false,
+        json: async () => ({ error: "Unauthorized" }),
+      });
+
+      localStorage.setItem("carebridge_access_token", "test-token");
+
+      await expect(consentApi.getPatientAccessLogs()).rejects.toThrow();
+    });
+  });
 });

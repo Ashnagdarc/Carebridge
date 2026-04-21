@@ -4,6 +4,7 @@ import {
   ConsentRecord,
   ConsentScope,
   HospitalInfo,
+  AccessLogEntry,
 } from '@/types/consent';
 
 const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
@@ -65,6 +66,24 @@ interface BackendConsentRecord {
     name: string;
     code?: string;
   };
+}
+
+interface BackendAuditLog {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string;
+  hospitalId?: string;
+  status: string;
+  details?: string;
+  createdAt: string | Date;
+}
+
+interface BackendAuditLogListResponse {
+  logs: BackendAuditLog[];
+  total: number;
+  skip: number;
+  take: number;
 }
 
 async function readError(response: Response, fallback: string): Promise<Error> {
@@ -193,6 +212,19 @@ function mapConsentRecord(record: BackendConsentRecord): ConsentRecord {
     accessCount: record.accessCount,
     lastAccessedAt: toIsoString(record.lastAccessedAt),
     revokedAt,
+  };
+}
+
+function mapAccessLogEntry(log: BackendAuditLog): AccessLogEntry {
+  return {
+    id: log.id,
+    action: log.action,
+    resourceType: log.resourceType,
+    resourceId: log.resourceId,
+    hospitalId: log.hospitalId,
+    status: log.status,
+    details: log.details,
+    createdAt: toIsoString(log.createdAt) || new Date().toISOString(),
   };
 }
 
@@ -360,5 +392,45 @@ export const consentApi = {
     if (!response.ok) {
       throw await readError(response, 'Failed to revoke consent');
     }
+  },
+
+  async getPatientAccessLogs(skip = 0, take = 20): Promise<{
+    logs: AccessLogEntry[];
+    total: number;
+    skip: number;
+    take: number;
+    hasMore: boolean;
+  }> {
+    const token = this.getToken();
+    const params = new URLSearchParams({
+      skip: String(skip),
+      take: String(take),
+    });
+
+    const response = await fetch(
+      `${API_URL}/audit/patient-logs?${params.toString()}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
+
+    if (!response.ok) {
+      throw await readError(response, 'Failed to fetch access logs');
+    }
+
+    const result = unwrapResponse<BackendAuditLogListResponse>(await response.json());
+    const logs = (result.logs || []).map(mapAccessLogEntry);
+
+    return {
+      logs,
+      total: result.total || 0,
+      skip: result.skip || skip,
+      take: result.take || take,
+      hasMore: (result.skip || skip) + logs.length < (result.total || 0),
+    };
   },
 };

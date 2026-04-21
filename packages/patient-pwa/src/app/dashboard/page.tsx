@@ -112,8 +112,21 @@ function DashboardContent() {
             <p className="text-gray-600 text-sm mb-3">
               You have no pending consent requests at this time.
             </p>
-            <Button variant="secondary" size="sm" className="w-full">
+            <Button
+              variant="secondary"
+              size="sm"
+              className="w-full"
+              onClick={() => router.push("/consents")}
+            >
               View All Requests
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full"
+              onClick={() => router.push("/consents/history")}
+            >
+              View Consent History
             </Button>
           </CardBody>
         </Card>

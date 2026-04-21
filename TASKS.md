@@ -332,37 +332,9 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 ---
 
 ### Task 2.5: Implement Consent History & Access Log Views
-**Status:** ⬜ Not Started  
+**Status:** 🟨 In Progress (Iteration 1/3)  
 **Assigned To:** AI / Developer  
-**Iterations:** 0/3  
-**Blocked By:** Task 2.1, Task 1.4, Task 1.5  
-
-**Acceptance Criteria:**
-- [ ] Consent History page lists active consents
-- [ ] Each active consent shows: hospital, scopes, granted date, expiry date, "REVOKE" button
-- [ ] Revoke button → confirmation modal → API call to revoke
-- [ ] Revoke successful → consent moves to "REVOKED" section
-- [ ] Expandable sections: Active, Expired, Revoked (collapsed by default)
-- [ ] Access Log section showing timeline of data access events
-- [ ] Each log entry: date/time, hospital, data accessed, status (success/error)
-- [ ] API integration: fetch active consents, revocation, access logs
-- [ ] Pagination or infinite scroll for large access logs
-- [ ] Empty states if no consents or logs
-- [ ] Responsive design
-- [ ] Unit tests for filtering and display logic
-- [ ] Integration tests for revocation and log fetching
-
-**Ralph Loop Notes:**
-- Iteration 1: UI layout, sections, basic rendering
-- Iteration 2: API integration, revocation logic, timeline
-- Iteration 3: Pagination, edge cases, comprehensive tests
-
----
-
-### Task 2.5: Implement Consent History & Access Log Views
-**Status:** ⬜ Not Started  
-**Assigned To:** AI / Developer  
-**Iterations:** 0/3  
+**Iterations:** 1/3  
 **Blocked By:** Task 2.1, Task 1.4, Task 1.5  
 
 **Acceptance Criteria:**
@@ -587,8 +559,8 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 
 | Milestone | Tasks | Est. Duration | Status |
 |-----------|-------|----------------|--------|
-| 1: Backend Foundation | 1.1–1.6 (6 tasks) | Weeks 1–2 | ⬜ Not Started |
-| 2: Patient PWA | 2.1–2.7 (7 tasks) | Weeks 3–4 | ⬜ Not Started |
+| 1: Backend Foundation | 1.1–1.6 (6 tasks) | Weeks 1–2 | ✅ Complete |
+| 2: Patient PWA | 2.1–2.7 (7 tasks) | Weeks 3–4 | 🟨 In Progress |
 | 3: Integration & Testing | 3.1–3.3 (3 tasks) | Weeks 5–6 | ⬜ Not Started |
 | 4: Deployment & Hardening | 4.1–4.4 (4 tasks) | Weeks 7+ | ⬜ Not Started |
 
@@ -605,5 +577,5 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 
 ---
 
-**Last Updated:** April 20, 2026  
+**Last Updated:** April 21, 2026  
 **Next Review:** Weekly team sync
