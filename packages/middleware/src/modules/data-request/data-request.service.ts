@@ -24,6 +24,10 @@ export class DataRequestService {
   private readonly REQUEST_TIMEOUT_MS = 10000; // 10 seconds
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY_MS = 1000;
+  private readonly HOSPITAL_API_TOKEN =
+    process.env.HOSPITAL_API_TOKEN ||
+    process.env.MOCK_HOSPITAL_TOKEN ||
+    'mock-hospital-token';
 
   constructor(
     private prisma: PrismaService,
@@ -215,12 +219,24 @@ export class DataRequestService {
         data: { status: DataRequestStatus.IN_PROGRESS },
       });
 
-      // Fetch data from target hospital
+      // Fetch data from the hospital holding the records, then deliver it to
+      // the requesting hospital. The existing DTO uses sourceHospitalId for
+      // the requester and targetHospitalId for the data holder.
       const responseData = await this.fetchDataFromHospital(
         targetHospital,
         patient.id,
         dataRequest.dataTypes,
       );
+      const deliveryReceipt = await this.deliverDataToHospital(
+        sourceHospital,
+        responseData,
+      );
+      const routedData = {
+        retrievedFrom: targetHospital.id,
+        deliveredTo: sourceHospital.id,
+        deliveryReceipt,
+        data: responseData,
+      };
 
       const latencyMs = Date.now() - latencyStart;
 
@@ -232,7 +248,7 @@ export class DataRequestService {
         where: { id: dataRequest.id },
         data: {
           status: DataRequestStatus.COMPLETED,
-          responseData,
+          responseData: JSON.stringify(routedData),
           consentRecordId,
           completedAt: new Date(),
           latencyMs,
@@ -250,6 +266,7 @@ export class DataRequestService {
         status: 'success',
         details: JSON.stringify({
           targetHospital: targetHospital.id,
+          deliveredTo: sourceHospital.id,
           dataTypes: dataRequest.dataTypes,
           latencyMs,
         }),
@@ -327,6 +344,7 @@ export class DataRequestService {
         },
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.HOSPITAL_API_TOKEN}`,
         },
       }).pipe(
         timeout(this.REQUEST_TIMEOUT_MS),
@@ -359,6 +377,56 @@ export class DataRequestService {
 
       throw new BadRequestException(
         `Failed to fetch data from target hospital: ${error.message}`,
+      );
+    }
+  }
+
+  /**
+   * Deliver fetched data to the requesting hospital.
+   */
+  private async deliverDataToHospital(
+    destinationHospital: any,
+    payload: any,
+  ): Promise<any> {
+    const endpoint = `${destinationHospital.endpoint}/api/v1/data-delivery`;
+
+    try {
+      const response$ = this.httpService.post(endpoint, payload, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${this.HOSPITAL_API_TOKEN}`,
+        },
+      }).pipe(
+        timeout(this.REQUEST_TIMEOUT_MS),
+        retry({
+          count: this.RETRY_ATTEMPTS - 1,
+          delay: this.RETRY_DELAY_MS,
+        }),
+      );
+
+      const response = await firstValueFrom(response$);
+      return response.data;
+    } catch (error) {
+      if (error.name === 'TimeoutError') {
+        throw new GatewayTimeoutException(
+          `Destination hospital delivery timeout after ${this.REQUEST_TIMEOUT_MS}ms`,
+        );
+      }
+
+      if (error.response?.status === 503) {
+        throw new ServiceUnavailableException(
+          'Destination hospital service unavailable',
+        );
+      }
+
+      if (error.response?.status === 401) {
+        throw new UnauthorizedException(
+          'Authentication failed with destination hospital',
+        );
+      }
+
+      throw new BadRequestException(
+        `Failed to deliver data to destination hospital: ${error.message}`,
       );
     }
   }
@@ -576,9 +644,21 @@ export class DataRequestService {
       requestedAt: request.requestedAt,
       completedAt: request.completedAt,
       failureReason: request.failureReason,
-      responseData: request.responseData,
+      responseData: this.parseResponseData(request.responseData),
       consentId: request.consentRecordId,
       latencyMs: request.latencyMs,
     };
+  }
+
+  private parseResponseData(responseData: any): any {
+    if (typeof responseData !== 'string') {
+      return responseData;
+    }
+
+    try {
+      return JSON.parse(responseData);
+    } catch {
+      return responseData;
+    }
   }
 }

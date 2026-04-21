@@ -441,9 +441,9 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 ## Milestone 3: Integration & Testing (Weeks 5–6)
 
 ### Task 3.1: Create Mock Hospital APIs (A & B)
-**Status:** 🚧 In Progress (Iteration 1/2)  
+**Status:** ✅ Complete (Iteration 2/2)  
 **Assigned To:** AI / Developer  
-**Iterations:** 1/2  
+**Iterations:** 2/2  
 **Blocked By:** Task 1.6  
 
 **Acceptance Criteria:**
@@ -453,35 +453,35 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 - [x] Hospital B `/api/data-delivery` endpoint accepts and logs incoming data
 - [x] Both mock APIs accept authorization headers and validate them
 - [x] Docker setup for running both mock hospitals locally
-- [ ] Integration tests simulating middleware ↔ Hospital A/B communication
+- [x] Integration tests simulating middleware ↔ Hospital A/B communication
 
 **Ralph Loop Notes:**
 - Iteration 1: Basic mock endpoints, Docker wiring, and mock API unit tests
-- Iteration 2: Full request/response cycle, Docker setup
+- Iteration 2: Middleware fetch-and-deliver flow covered with Hospital A/B communication tests
 
 ---
 
 ### Task 3.2: End-to-End Integration Tests
-**Status:** ⬜ Not Started  
+**Status:** 🚧 In Progress (Iteration 1/2)  
 **Assigned To:** AI / Developer  
-**Iterations:** 0/2  
+**Iterations:** 1/2  
 **Blocked By:** Task 1.6, Task 3.1  
 
 **Acceptance Criteria:**
-- [ ] Test suite for full data request flow:
-  - [ ] Hospital B initiates request
-  - [ ] Middleware checks consent
-  - [ ] Consent request sent to patient
-  - [ ] Patient approves
-  - [ ] Middleware fetches data from Hospital A
-  - [ ] Data routed to Hospital B
-  - [ ] Audit trail logged
+- [x] Test suite for full data request flow:
+  - [x] Hospital B initiates request
+  - [x] Middleware checks consent
+  - [x] Consent request sent to patient
+  - [x] Patient approves
+  - [x] Middleware fetches data from Hospital A
+  - [x] Data routed to Hospital B
+  - [x] Audit trail logged
 - [ ] Test coverage >80% for critical paths
 - [ ] Performance benchmarks (request latency, database queries)
 - [ ] Tests run in CI/CD pipeline (GitHub Actions or similar)
 
 **Ralph Loop Notes:**
-- Iteration 1: Core flow tests
+- Iteration 1: Core consent-to-routing flow covered with in-memory integration test
 - Iteration 2: Edge cases, performance benchmarks
 
 ---

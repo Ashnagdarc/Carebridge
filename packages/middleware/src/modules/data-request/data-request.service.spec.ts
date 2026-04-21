@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
+import { of } from 'rxjs';
 import { DataRequestService } from './data-request.service';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { ConsentService } from '../consent/consent.service';
@@ -54,6 +55,7 @@ describe('DataRequestService', () => {
           provide: HttpService,
           useValue: {
             get: jest.fn(),
+            post: jest.fn(),
           },
         },
       ],
@@ -146,10 +148,31 @@ describe('DataRequestService', () => {
       expect(consentService.createConsentRequest).toHaveBeenCalled();
     });
 
-    it('should route to target hospital if consent exists', async () => {
+    it('should fetch data from target hospital and deliver it to source hospital if consent exists', async () => {
       const patient = { id: 'pat_1', email: 'patient@example.com' };
-      const sourceHospital = { id: 'hosp_1', name: 'Hospital 1', endpoint: 'http://localhost:3001' };
-      const targetHospital = { id: 'hosp_2', name: 'Hospital 2', endpoint: 'http://localhost:3002' };
+      const sourceHospital = {
+        id: 'hosp_1',
+        name: 'Hospital B',
+        endpoint: 'http://hospital-b.test',
+      };
+      const targetHospital = {
+        id: 'hosp_2',
+        name: 'Hospital A',
+        endpoint: 'http://hospital-a.test',
+      };
+      const fetchedData = {
+        patientId: 'pat_1',
+        sourceHospital: 'HOSPITAL_A',
+        dataTypes: [DataType.MEDICATIONS, DataType.ALLERGIES],
+        data: {
+          medications: [],
+          allergies: [],
+        },
+      };
+      const deliveryReceipt = {
+        status: 'accepted',
+        deliveryId: 'delivery-1',
+      };
 
       prismaService.patient.findUnique.mockResolvedValue(patient as any);
       prismaService.hospital.findUnique
@@ -160,24 +183,57 @@ describe('DataRequestService', () => {
       const dataRequest = {
         id: 'data_req_1',
         ...createDto,
-        status: DataRequestStatus.IN_PROGRESS,
+        status: DataRequestStatus.PENDING,
         requestedAt: new Date(),
       };
 
       prismaService.dataRequest.create.mockResolvedValue(dataRequest as any);
-      prismaService.dataRequest.update.mockResolvedValue({
-        ...dataRequest,
-        status: DataRequestStatus.COMPLETED,
-        completedAt: new Date(),
-        latencyMs: 150,
-        responseData: { medications: [] },
-      });
+      prismaService.dataRequest.update
+        .mockResolvedValueOnce({
+          ...dataRequest,
+          status: DataRequestStatus.IN_PROGRESS,
+        } as any)
+        .mockImplementationOnce((_args) =>
+          Promise.resolve({
+            ...dataRequest,
+            status: DataRequestStatus.COMPLETED,
+            completedAt: new Date(),
+            latencyMs: 150,
+            responseData: _args.data.responseData,
+          } as any),
+        );
+      httpService.get.mockReturnValue(of({ data: fetchedData }) as any);
+      httpService.post.mockReturnValue(of({ data: deliveryReceipt }) as any);
 
-      // Note: In real scenario, need to mock HTTP call, but this tests the flow
-      // The actual HTTP fetch would be tested in E2E tests
+      const result = await service.createDataRequest(createDto, 'hosp_1');
 
-      // For this test, we're verifying the logic path works
-      expect(consentService.hasActiveConsent).toBeDefined();
+      expect(result.status).toBe(DataRequestStatus.COMPLETED);
+      expect(result.responseData.data).toEqual(fetchedData);
+      expect(result.responseData.deliveryReceipt).toEqual(deliveryReceipt);
+      expect(httpService.get).toHaveBeenCalledWith(
+        'http://hospital-a.test/api/v1/patient-data/pat_1',
+        expect.objectContaining({
+          params: { dataTypes: 'medications,allergies' },
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-hospital-token',
+          }),
+        }),
+      );
+      expect(httpService.post).toHaveBeenCalledWith(
+        'http://hospital-b.test/api/v1/data-delivery',
+        fetchedData,
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            Authorization: 'Bearer mock-hospital-token',
+          }),
+        }),
+      );
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'data_request_completed',
+          status: 'success',
+        }),
+      );
     });
   });
 

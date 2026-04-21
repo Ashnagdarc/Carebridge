@@ -274,15 +274,45 @@ describe('ConsentService', () => {
     it('should return true if active consent exists', async () => {
       const consent = { id: 'conc_1', revokedAt: null };
 
-      prismaService.consentRecord.findFirst.mockResolvedValue(consent as any);
+      prismaService.consentRecord.findMany.mockResolvedValue([
+        { ...consent, dataType: 'allergies' },
+      ] as any);
 
       const result = await service.hasActiveConsent('pat_1', 'hosp_1', 'allergies');
 
       expect(result).toBe(true);
     });
 
+    it('should return true if a multi-scope consent covers the requested data type', async () => {
+      prismaService.consentRecord.findMany.mockResolvedValue([
+        {
+          id: 'conc_1',
+          dataType: 'medications, allergies',
+          revokedAt: null,
+        },
+      ] as any);
+
+      const result = await service.hasActiveConsent('pat_1', 'hosp_1', 'allergies');
+
+      expect(result).toBe(true);
+    });
+
+    it('should return true if all data was consented', async () => {
+      prismaService.consentRecord.findMany.mockResolvedValue([
+        {
+          id: 'conc_1',
+          dataType: 'all',
+          revokedAt: null,
+        },
+      ] as any);
+
+      const result = await service.hasActiveConsent('pat_1', 'hosp_1', 'diagnoses');
+
+      expect(result).toBe(true);
+    });
+
     it('should return false if no active consent exists', async () => {
-      prismaService.consentRecord.findFirst.mockResolvedValue(null);
+      prismaService.consentRecord.findMany.mockResolvedValue([]);
 
       const result = await service.hasActiveConsent('pat_1', 'hosp_1', 'allergies');
 

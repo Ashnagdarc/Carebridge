@@ -409,11 +409,10 @@ export class ConsentService {
     hospitalId: string,
     dataType: string,
   ): Promise<boolean> {
-    const consent = await this.prisma.consentRecord.findFirst({
+    const consents = await this.prisma.consentRecord.findMany({
       where: {
         patientId,
         requestingHospitalId: hospitalId,
-        dataType,
         revokedAt: null,
         expiresAt: {
           gt: new Date(),
@@ -421,7 +420,9 @@ export class ConsentService {
       },
     });
 
-    return !!consent;
+    return consents.some((consent) =>
+      this.consentRecordCoversDataType(consent.dataType, dataType),
+    );
   }
 
   /**
@@ -484,5 +485,21 @@ export class ConsentService {
       expiresAt: consentRecord.expiresAt,
       createdAt: consentRecord.createdAt,
     };
+  }
+
+  private consentRecordCoversDataType(
+    consentDataType: string,
+    requestedDataType: string,
+  ): boolean {
+    const normalizedRequest = requestedDataType.trim().toLowerCase();
+    const consentScopes = consentDataType
+      .split(',')
+      .map((scope) => scope.trim().toLowerCase())
+      .filter(Boolean);
+
+    return (
+      consentScopes.includes(normalizedRequest) ||
+      consentScopes.includes('all')
+    );
   }
 }
