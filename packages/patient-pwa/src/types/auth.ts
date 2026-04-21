@@ -4,10 +4,13 @@ export interface PatientAuthResponse {
   id: string;
   email: string;
   name: string;
+  firstName: string;
+  lastName: string;
   externalId: string;
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
+  tokenType: string;
 }
 
 export interface SignupRequest {

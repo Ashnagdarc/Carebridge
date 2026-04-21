@@ -1,5 +1,4 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 // Mock next/navigation
 const mockPush = jest.fn();

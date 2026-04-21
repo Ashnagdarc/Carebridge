@@ -5,7 +5,7 @@ import { BadRequestException } from '@nestjs/common';
 
 describe('AuditService', () => {
   let service: AuditService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -27,7 +27,7 @@ describe('AuditService', () => {
     }).compile();
 
     service = module.get<AuditService>(AuditService);
-    prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prismaService = module.get(PrismaService) as any;
   });
 
   afterEach(() => {

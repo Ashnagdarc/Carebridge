@@ -224,13 +224,16 @@ export class DataRequestService {
 
       const latencyMs = Date.now() - latencyStart;
 
+      const consentRecordId =
+        consentId && consentId !== 'consent_from_check' ? consentId : undefined;
+
       // Update request with response data
       const updatedRequest = await this.prisma.dataRequest.update({
         where: { id: dataRequest.id },
         data: {
           status: DataRequestStatus.COMPLETED,
           responseData,
-          consentId: consentId || undefined,
+          consentRecordId,
           completedAt: new Date(),
           latencyMs,
         },
@@ -243,7 +246,7 @@ export class DataRequestService {
         resourceId: dataRequest.id,
         patientId: patient.id,
         hospitalId: sourceHospital.id,
-        consentRecordId: consentId || undefined,
+        consentRecordId,
         status: 'success',
         details: JSON.stringify({
           targetHospital: targetHospital.id,
@@ -273,13 +276,16 @@ export class DataRequestService {
         failureReason = 'Target hospital service unavailable';
       }
 
+      const consentRecordId =
+        consentId && consentId !== 'consent_from_check' ? consentId : undefined;
+
       // Update request with failure
       const updatedRequest = await this.prisma.dataRequest.update({
         where: { id: dataRequest.id },
         data: {
           status,
           failureReason,
-          consentId: consentId || undefined,
+          consentRecordId,
           completedAt: new Date(),
           latencyMs,
         },
@@ -571,7 +577,7 @@ export class DataRequestService {
       completedAt: request.completedAt,
       failureReason: request.failureReason,
       responseData: request.responseData,
-      consentId: request.consentId,
+      consentId: request.consentRecordId,
       latencyMs: request.latencyMs,
     };
   }

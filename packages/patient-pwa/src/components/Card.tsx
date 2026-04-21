@@ -34,13 +34,13 @@ export function CardHeader({
   );
 }
 
-interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {}
+type CardBodyProps = HTMLAttributes<HTMLDivElement>;
 
 export function CardBody({ className, ...props }: CardBodyProps) {
   return <div className={`space-y-3 ${className}`} {...props} />;
 }
 
-interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {}
+type CardFooterProps = HTMLAttributes<HTMLDivElement>;
 
 export function CardFooter({ className, ...props }: CardFooterProps) {
   return (

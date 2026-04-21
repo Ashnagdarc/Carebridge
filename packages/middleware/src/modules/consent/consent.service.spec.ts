@@ -5,7 +5,7 @@ import { BadRequestException, NotFoundException, UnauthorizedException } from '@
 
 describe('ConsentService', () => {
   let service: ConsentService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -40,7 +40,7 @@ describe('ConsentService', () => {
     }).compile();
 
     service = module.get<ConsentService>(ConsentService);
-    prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prismaService = module.get(PrismaService) as any;
   });
 
   afterEach(() => {

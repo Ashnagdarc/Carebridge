@@ -26,6 +26,8 @@ export interface ConsentRequest {
   requestedAt: string; // ISO date
   expiresAt?: string; // ISO date
   status: "pending" | "approved" | "denied" | "expired";
+  dataType?: string;
+  description?: string;
 }
 
 export interface ConsentRecord {
@@ -34,9 +36,13 @@ export interface ConsentRecord {
   hospitalId: string;
   hospital: HospitalInfo;
   scopes: ConsentScope[];
+  consentRequestId?: string;
   approvedAt: string; // ISO date
   expiresAt: string; // ISO date
   status: "active" | "revoked" | "expired";
+  accessCount?: number;
+  lastAccessedAt?: string;
+  revokedAt?: string;
 }
 
 export type ExpiryOption = 7 | 30 | 365 | "custom";

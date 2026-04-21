@@ -1,4 +1,4 @@
-import { IsString, IsEmail, IsOptional, IsDateString, IsArray } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsDateString, Max, Min } from 'class-validator';
 
 export class CreateConsentRequestDto {
   @IsString()
@@ -20,8 +20,15 @@ export class CreateConsentRequestDto {
 }
 
 export class ApproveConsentRequestDto {
+  @IsOptional()
   @IsString()
-  approvalCode: string; // Generated approval code for verification
+  approvalCode?: string; // Optional for out-of-band approvals; authenticated patients do not need it.
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(3650)
+  expiryDays?: number;
 }
 
 export class DenyConsentRequestDto {

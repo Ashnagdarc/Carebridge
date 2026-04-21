@@ -110,8 +110,8 @@ export class ConsentService {
       );
     }
 
-    // Verify approval code matches
-    if (consentRequest.approvalCode !== dto.approvalCode) {
+    // Verify approval code if the caller is using the out-of-band approval path.
+    if (dto.approvalCode && consentRequest.approvalCode !== dto.approvalCode) {
       throw new UnauthorizedException('Invalid approval code');
     }
 
@@ -119,6 +119,10 @@ export class ConsentService {
     if (consentRequest.expiresAt && new Date() > consentRequest.expiresAt) {
       throw new BadRequestException('Consent request has expired');
     }
+
+    const consentExpiresAt = dto.expiryDays
+      ? new Date(Date.now() + dto.expiryDays * 24 * 60 * 60 * 1000)
+      : consentRequest.expiresAt;
 
     // Update consent request status
     const updated = await this.prisma.consentRequest.update({
@@ -142,7 +146,7 @@ export class ConsentService {
         requestingHospitalId: consentRequest.requestingHospitalId,
         sourceHospitalId: consentRequest.requestingHospitalId, // For now, same as requesting hospital
         dataType: consentRequest.dataType,
-        expiresAt: consentRequest.expiresAt,
+        expiresAt: consentExpiresAt,
       },
     });
 

@@ -9,7 +9,7 @@ jest.mock('bcryptjs');
 
 describe('PatientsService', () => {
   let service: PatientsService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
   let jwtService: jest.Mocked<JwtService>;
 
   beforeEach(async () => {
@@ -43,7 +43,7 @@ describe('PatientsService', () => {
     }).compile();
 
     service = module.get<PatientsService>(PatientsService);
-    prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prismaService = module.get(PrismaService) as any;
     jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
   });
 

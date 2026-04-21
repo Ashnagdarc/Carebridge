@@ -1,13 +1,28 @@
+import { IsOptional, IsString } from 'class-validator';
+
 export class HospitalRegisterDto {
+  @IsString()
   name: string;
+
+  @IsString()
   code: string;
+
+  @IsString()
   redirectUri: string;
+
+  @IsString()
   endpoint: string;
+
+  @IsOptional()
+  @IsString()
   contactEmail?: string;
 }
 
 export class HospitalLoginDto {
+  @IsString()
   clientId: string;
+
+  @IsString()
   clientSecret: string;
 }
 

@@ -9,7 +9,7 @@ import { DataRequestStatus, DataType } from './dto/data-request.dto';
 
 describe('DataRequestService', () => {
   let service: DataRequestService;
-  let prismaService: jest.Mocked<PrismaService>;
+  let prismaService: any;
   let consentService: jest.Mocked<ConsentService>;
   let auditService: jest.Mocked<AuditService>;
   let httpService: jest.Mocked<HttpService>;
@@ -60,7 +60,7 @@ describe('DataRequestService', () => {
     }).compile();
 
     service = module.get<DataRequestService>(DataRequestService);
-    prismaService = module.get(PrismaService) as jest.Mocked<PrismaService>;
+    prismaService = module.get(PrismaService) as any;
     consentService = module.get(ConsentService) as jest.Mocked<ConsentService>;
     auditService = module.get(AuditService) as jest.Mocked<AuditService>;
     httpService = module.get(HttpService) as jest.Mocked<HttpService>;

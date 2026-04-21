@@ -42,11 +42,15 @@ describe("Consent API", () => {
   describe("getPendingRequests", () => {
     it("fetches pending consent requests", async () => {
       const mockResponse = {
-        data: [
+        requests: [
           {
             id: "req-1",
             patientId: "patient-1",
-            hospitalId: "hospital-1",
+            requestingHospitalId: "hospital-1",
+            requestingHospital: { id: "hospital-1", name: "Hospital A" },
+            dataType: "allergies",
+            description: "Checkup",
+            createdAt: "2026-04-20T00:00:00Z",
             status: "pending",
           },
         ],
@@ -62,8 +66,10 @@ describe("Consent API", () => {
 
       expect(requests).toHaveLength(1);
       expect(requests[0].id).toBe("req-1");
+      expect(requests[0].hospital.name).toBe("Hospital A");
+      expect(requests[0].scopes[0].name).toBe("allergies");
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/patients/consent-requests/pending"),
+        expect.stringContaining("/consent/requests/pending"),
         expect.objectContaining({
           method: "GET",
           headers: expect.objectContaining({
@@ -88,11 +94,17 @@ describe("Consent API", () => {
   describe("getActiveConsents", () => {
     it("fetches active consent records", async () => {
       const mockResponse = {
-        data: [
+        consents: [
           {
             id: "consent-1",
+            consentRequestId: "req-1",
             patientId: "patient-1",
-            status: "active",
+            requestingHospitalId: "hospital-1",
+            sourceHospitalId: "hospital-1",
+            dataType: "allergies",
+            accessCount: 0,
+            expiresAt: "2026-12-31T00:00:00Z",
+            createdAt: "2026-04-20T00:00:00Z",
           },
         ],
       };
@@ -113,11 +125,15 @@ describe("Consent API", () => {
   describe("approveConsentRequest", () => {
     it("approves consent request with expiry days", async () => {
       const mockResponse = {
-        data: {
-          id: "consent-1",
-          status: "active",
-          expiresAt: "2024-12-31T00:00:00Z",
-        },
+        id: "req-1",
+        patientId: "patient-1",
+        requestingHospitalId: "hospital-1",
+        requestingHospital: { id: "hospital-1", name: "Hospital A" },
+        dataType: "allergies",
+        description: "Checkup",
+        status: "approved",
+        createdAt: "2026-04-20T00:00:00Z",
+        expiresAt: "2026-12-31T00:00:00Z",
       };
 
       (global.fetch as jest.Mock).mockResolvedValueOnce({
@@ -128,9 +144,10 @@ describe("Consent API", () => {
       localStorage.setItem("carebridge_access_token", "test-token");
       const result = await consentApi.approveConsentRequest("req-1", 30);
 
-      expect(result.id).toBe("consent-1");
+      expect(result.id).toBe("req-1");
+      expect(result.status).toBe("approved");
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/patients/consent-requests/req-1/approve"),
+        expect.stringContaining("/consent/requests/req-1/approve"),
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ expiryDays: 30 }),
@@ -163,7 +180,7 @@ describe("Consent API", () => {
       await consentApi.denyConsentRequest("req-1", "Not needed right now");
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/patients/consent-requests/req-1/deny"),
+        expect.stringContaining("/consent/requests/req-1/deny"),
         expect.objectContaining({
           method: "POST",
           body: JSON.stringify({ reason: "Not needed right now" }),
@@ -181,7 +198,7 @@ describe("Consent API", () => {
       await consentApi.denyConsentRequest("req-1");
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/patients/consent-requests/req-1/deny"),
+        expect.stringContaining("/consent/requests/req-1/deny"),
         expect.any(Object)
       );
     });
@@ -198,7 +215,7 @@ describe("Consent API", () => {
       await consentApi.revokeConsent("consent-1");
 
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining("/patients/consent-records/consent-1/revoke"),
+        expect.stringContaining("/consent/records/consent-1"),
         expect.objectContaining({
           method: "DELETE",
         })
