@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { useToast } from "@/providers/ToastProvider";
-import { AccessLogEntry, ConsentRecord } from "@/types/consent";
+import { AccessLogEntry, ConsentRecord, HospitalInfo } from "@/types/consent";
 
 type ConsentSectionKey = "active" | "expired" | "revoked";
 
@@ -51,6 +51,8 @@ function ConsentHistoryContent() {
   const [processingRevokeId, setProcessingRevokeId] = useState<string | null>(null);
   const [confirmRevoke, setConfirmRevoke] = useState<ConsentRecord | null>(null);
 
+  const [hospitals, setHospitals] = useState<HospitalInfo[]>([]);
+
   const [logPagination, setLogPagination] = useState({
     skip: 0,
     take: ACCESS_LOG_PAGE_SIZE,
@@ -70,12 +72,14 @@ function ConsentHistoryContent() {
         setConsentsLoading(true);
         setLogsLoading(true);
 
-        const [consents, logResult] = await Promise.all([
+        const [consents, logResult, hospitalsList] = await Promise.all([
           consentApi.getActiveConsents(),
           consentApi.getPatientAccessLogs(0, ACCESS_LOG_PAGE_SIZE),
+          consentApi.getHospitals(),
         ]);
 
         setActiveConsents(consents);
+        setHospitals(hospitalsList);
         setAccessLogs(logResult.logs);
         setLogPagination({
           skip: logResult.skip,
@@ -102,6 +106,14 @@ function ConsentHistoryContent() {
       ),
     [activeConsents]
   );
+
+  const hospitalMap = useMemo(() => {
+    return hospitals.reduce((map, hospital) => {
+      map[hospital.id] = hospital.name;
+      return map;
+    }, {} as Record<string, string>);
+  }, [hospitals]);
+
 
   const currentActiveConsents = useMemo(
     () =>
@@ -266,7 +278,7 @@ function ConsentHistoryContent() {
                           </p>
                           <p className="text-xs text-gray-600">{parseDataAccessed(log)}</p>
                           <p className="text-xs text-gray-600">
-                            Hospital: {log.hospitalId || "Unknown"}
+                            Hospital: {hospitalMap[log.hospitalId || ""] || "Unknown"}
                           </p>
                           <p className="text-xs text-gray-600">{formatDateTime(log.createdAt)}</p>
                         </div>
@@ -277,7 +289,7 @@ function ConsentHistoryContent() {
                               : "bg-red-100 text-red-700"
                           }`}
                         >
-                          {log.status}
+                          {log.status.toLowerCase() === "success" ? "Successful" : log.status.toLowerCase() === "failed" ? "Failed" : humanize(log.status)}
                         </span>
                       </div>
                     </li>

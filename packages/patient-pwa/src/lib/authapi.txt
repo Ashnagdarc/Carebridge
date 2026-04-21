@@ -1,0 +1,51 @@
+export const authApi = {
+  async signup(data: SignupRequest): Promise<PatientAuthResponse> {
+    const { firstName, lastName } = splitFullName(data.name);
+    const response = await fetch(`${API_URL}/patients/signup`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        email: data.email,
+        password: data.password,
+      }),
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Signup failed');
+    }
+
+    const result = unwrapResponse<BackendPatientAuthResponse>(await response.json());
+    return mapPatientAuthResponse(result);
+  },
+
+  async login(credentials: LoginRequest): Promise<PatientAuthResponse> {
+    const response = await fetch(`${API_URL}/patients/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(credentials),
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Login failed');
+    }
+
+    const result = unwrapResponse<BackendPatientAuthResponse>(await response.json());
+    return mapPatientAuthResponse(result);
+  },
+
+  async logout(token: string): Promise<void> {
+    await fetch(`${API_URL}/patients/logout`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+};

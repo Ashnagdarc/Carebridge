@@ -42,9 +42,18 @@ function DashboardContent() {
         title="Dashboard"
         subtitle={`Welcome, ${user?.name}`}
         action={
-          <Button variant="ghost" size="sm" onClick={handleLogout}>
-            Logout
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/settings")}
+            >
+              Settings
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              Logout
+            </Button>
+          </div>
         }
       />
 

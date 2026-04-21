@@ -1,4 +1,4 @@
-import { LoginRequest, SignupRequest, PatientAuthResponse } from '@/types/auth';
+import { LoginRequest, SignupRequest, PatientAuthResponse, UpdateProfileRequest, ChangePasswordRequest } from '@/types/auth';
 import {
   ConsentRequest,
   ConsentRecord,
@@ -278,6 +278,47 @@ export const authApi = {
       },
     });
   },
+
+  async updateProfile(data: UpdateProfileRequest): Promise<PatientAuthResponse> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/patients/profile`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Profile update failed');
+    }
+
+    const result = unwrapResponse<BackendPatientAuthResponse>(await response.json());
+    return mapPatientAuthResponse(result);
+  },
+
+  async changePassword(data: ChangePasswordRequest): Promise<void> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/patients/password`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Password change failed');
+    }
+  },
+
+  getToken(): string {
+    if (typeof window === 'undefined') return '';
+    const stored = localStorage.getItem('carebridge_access_token');
+    return stored || '';
+  },
 };
 
 /**
@@ -432,5 +473,28 @@ export const consentApi = {
       take: result.take || take,
       hasMore: (result.skip || skip) + logs.length < (result.total || 0),
     };
+  },
+
+  async getHospitals(): Promise<HospitalInfo[]> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/hospitals`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw await readError(response, "Failed to fetch hospitals");
+    }
+
+    const result = unwrapResponse<{ id: string; name: string; code: string }[]>(
+      await response.json()
+    );
+    return (result || []).map((h) => ({
+      id: h.id,
+      name: h.name,
+    }));
   },
 };

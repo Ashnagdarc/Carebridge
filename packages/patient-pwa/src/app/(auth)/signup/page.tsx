@@ -30,12 +30,13 @@ export default function SignupPage() {
     }
   }, [isAuthenticated, authLoading, router]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error for this field when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
+  const handleChange = (value: string, name?: string) => {
+    if (name) {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+      // Clear error for this field when user starts typing
+      if (errors[name]) {
+        setErrors((prev) => ({ ...prev, [name]: "" }));
+      }
     }
   };
 

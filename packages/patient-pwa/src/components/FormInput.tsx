@@ -2,10 +2,11 @@
 
 import React, { InputHTMLAttributes } from "react";
 
-interface FormInputProps extends InputHTMLAttributes<HTMLInputElement> {
+interface FormInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   label: string;
   error?: string;
   helperText?: string;
+  onChange?: (value: string, name?: string) => void;
 }
 
 /**
@@ -18,11 +19,18 @@ export function FormInput({
   label,
   error,
   helperText,
+  onChange,
   id,
   className,
   ...props
 }: FormInputProps) {
   const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, "-")}`;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (onChange) {
+      onChange(e.target.value, e.target.name);
+    }
+  };
 
   return (
     <div className="w-full">
@@ -41,6 +49,7 @@ export function FormInput({
               : "border-tertiary bg-secondary text-foreground placeholder-gray-500 focus:bg-white"
           }
           ${className}`}
+        onChange={handleChange}
         aria-invalid={!!error}
         aria-describedby={
           error

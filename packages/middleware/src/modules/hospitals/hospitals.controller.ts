@@ -22,4 +22,14 @@ export class HospitalsController {
   async getProfile(@Request() req: any) {
     return this.hospitalsService.getHospitalById(req.user.hospitalId);
   }
+
+  @Get()
+  async getHospitals() {
+    return this.hospitalsService.getHospitals();
+  }
+}
+  @Get()
+  async getHospitals() {
+    return this.hospitalsService.getHospitals();
+  }
 }

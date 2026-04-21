@@ -24,6 +24,17 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface UpdateProfileRequest {
+  firstName: string;
+  lastName: string;
+  dateOfBirth?: string;
+}
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
 export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
