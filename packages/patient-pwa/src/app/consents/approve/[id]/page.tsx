@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
+import { BottomTabs } from "@/components/BottomTabs";
 
 function ConsentApprovalContent() {
   const router = useRouter();
@@ -168,6 +169,8 @@ function ConsentApprovalContent() {
           </CardBody>
         </Card>
       </main>
+
+      <BottomTabs />
     </div>
   );
 }

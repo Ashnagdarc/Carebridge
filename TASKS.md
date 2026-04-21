@@ -413,26 +413,26 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 ---
 
 ### Task 2.7: Implement Real-Time Notifications (WebSocket & Push)
-**Status:** ⬜ Not Started  
+**Status:** ✅ Complete (Iteration 1/3)  
 **Assigned To:** AI / Developer  
-**Iterations:** 0/3  
+**Iterations:** 1/3  
 **Blocked By:** Task 2.1, Task 1.4  
 
 **Acceptance Criteria:**
-- [ ] WebSocket connection established to middleware backend
-- [ ] Patient receives real-time notification when new consent request arrives
-- [ ] Push notification (Web Push API) on mobile if user allows
-- [ ] Notification badge appears on Consent Inbox tab
-- [ ] Toast notification appears on screen (if user is active)
-- [ ] Notification detail: hospital name, data scopes, clinical reason
-- [ ] Click notification → navigate to consent request detail
-- [ ] Graceful degradation: WebSocket failures don't crash app
-- [ ] Notification UI follows Apple HIG (minimalist, clear text)
-- [ ] Unit tests for notification handling
-- [ ] Integration tests for WebSocket connection and message delivery
+- [x] WebSocket connection established to middleware backend
+- [x] Patient receives real-time notification when new consent request arrives
+- [x] Push notification (Web Push API) on mobile if user allows
+- [x] Notification badge appears on Consent Inbox tab
+- [x] Toast notification appears on screen (if user is active)
+- [x] Notification detail: hospital name, data scopes, clinical reason
+- [x] Click notification → navigate to consent request detail
+- [x] Graceful degradation: WebSocket failures don't crash app
+- [x] Notification UI follows Apple HIG (minimalist, clear text)
+- [x] Unit tests for notification handling
+- [x] Integration tests for WebSocket connection and message delivery
 
 **Ralph Loop Notes:**
-- Iteration 1: WebSocket setup, basic notifications
+- Iteration 1: ✅ Complete - WebSocket notifications + push subscription + badge/toast UX
 - Iteration 2: Push notifications, badge updates
 - Iteration 3: Error handling, testing, UX polish
 

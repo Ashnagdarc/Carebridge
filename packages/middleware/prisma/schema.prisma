@@ -31,6 +31,7 @@ model Patient {
   auditLogs         AuditLog[]
   sessions          Session[]
   dataRequests      DataRequest[]
+  pushSubscriptions PushSubscription[]
 
   @@index([email])
   @@index([externalId])
@@ -158,6 +159,22 @@ model Session {
   @@index([patientId])
   @@index([token])
   @@index([expiresAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  endpoint  String
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([patientId, endpoint])
+  @@index([patientId])
+  @@index([endpoint])
 }
 
 model DataRequest {

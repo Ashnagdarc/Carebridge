@@ -7,6 +7,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
+import { BottomTabs } from "@/components/BottomTabs";
 import { useToast } from "@/providers/ToastProvider";
 import { AccessLogEntry, ConsentRecord, HospitalInfo } from "@/types/consent";
 
@@ -341,6 +342,8 @@ function ConsentHistoryContent() {
           </div>
         </div>
       )}
+
+      <BottomTabs />
     </div>
   );
 }

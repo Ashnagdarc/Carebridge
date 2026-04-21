@@ -24,6 +24,22 @@ interface TabNavigationProps {
  */
 export function TabNavigation({ items }: TabNavigationProps) {
   const pathname = usePathname();
+  const activeHref = React.useMemo(() => {
+    if (!pathname) return null;
+    let best: string | null = null;
+
+    for (const item of items) {
+      const isExact = pathname === item.href;
+      const isNested = pathname.startsWith(`${item.href}/`);
+      if (!isExact && !isNested) continue;
+
+      if (!best || item.href.length > best.length) {
+        best = item.href;
+      }
+    }
+
+    return best;
+  }, [items, pathname]);
 
   return (
     <nav
@@ -33,8 +49,7 @@ export function TabNavigation({ items }: TabNavigationProps) {
     >
       <div className="flex justify-around items-stretch">
         {items.map((item) => {
-          const isActive =
-            pathname === item.href || pathname.startsWith(item.href);
+          const isActive = activeHref === item.href;
 
           return (
             <Link

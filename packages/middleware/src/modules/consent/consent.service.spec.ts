@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConsentService } from './consent.service';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 describe('ConsentService', () => {
   let service: ConsentService;
@@ -11,6 +12,12 @@ describe('ConsentService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConsentService,
+        {
+          provide: NotificationsService,
+          useValue: {
+            notifyPatient: jest.fn(),
+          },
+        },
         {
           provide: PrismaService,
           useValue: {

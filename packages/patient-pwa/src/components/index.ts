@@ -11,6 +11,8 @@ export type { } from './Header';
 export { TabNavigation } from './TabNavigation';
 export type { TabItem } from './TabNavigation';
 
+export { BottomTabs } from "./BottomTabs";
+
 export { FormInput } from './FormInput';
 export type { } from './FormInput';
 

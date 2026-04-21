@@ -13,10 +13,14 @@ import {
   ConsentRequestResponseDto,
   ConsentRecordResponseDto,
 } from './dto/consent.dto';
+import { NotificationsService } from '@modules/notifications/notifications.service';
 
 @Injectable()
 export class ConsentService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   /**
    * Hospital initiates a consent request from a patient
@@ -74,6 +78,26 @@ export class ConsentService {
         requestingHospital: {
           select: { id: true, name: true, code: true },
         },
+      },
+    });
+
+    this.notificationsService.notifyPatient(dto.patientId, {
+      type: 'consent_request_created',
+      data: {
+        consentRequestId: consentRequest.id,
+        patientId: dto.patientId,
+        hospital: {
+          id: consentRequest.requestingHospitalId,
+          name:
+            consentRequest.requestingHospital?.name ||
+            consentRequest.requestingHospitalId,
+        },
+        scopes: (consentRequest.dataType || '')
+          .split(',')
+          .map((scope) => scope.trim())
+          .filter(Boolean),
+        clinicalReason: consentRequest.description || 'Healthcare data request',
+        createdAt: consentRequest.createdAt.toISOString(),
       },
     });
 

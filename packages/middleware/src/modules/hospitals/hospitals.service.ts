@@ -151,31 +151,6 @@ export class HospitalsService {
     });
   }
 
-  async getHospitals() {
-    return this.prisma.hospital.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        code: true,
-      },
-      orderBy: { name: 'asc' },
-    });
-  }
-
-
-  async getHospitals() {
-    return this.prisma.hospital.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        code: true,
-      },
-      orderBy: { name: "asc" },
-    });
-  }
-
   async validateHospitalToken(hospitalId: string): Promise<any> {
     const hospital = await this.getHospitalById(hospitalId);
     return hospital;

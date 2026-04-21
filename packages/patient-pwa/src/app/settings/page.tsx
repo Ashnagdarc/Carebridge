@@ -8,9 +8,11 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { FormInput } from "@/components/FormInput";
+import { BottomTabs } from "@/components/BottomTabs";
 import { useToast } from "@/providers/ToastProvider";
 import { authApi } from "@/lib/api";
 import { UpdateProfileRequest, ChangePasswordRequest } from "@/types/auth";
+import { useNotifications } from "@/hooks/useNotifications";
 
 type SettingsSection = "account" | "notifications" | "security";
 
@@ -18,6 +20,13 @@ function SettingsContent() {
   const router = useRouter();
   const { user } = useAuth();
   const { addToast } = useToast();
+  const {
+    pushSupported,
+    pushPermission,
+    pushEnabled,
+    enablePush,
+    disablePush,
+  } = useNotifications();
 
   const [activeSection, setActiveSection] = useState<SettingsSection>("account");
 
@@ -244,6 +253,35 @@ function SettingsContent() {
             <CardBody>
               <h3 className="text-lg font-semibold mb-4">Notification Preferences</h3>
               <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">Push Notifications (This Device)</p>
+                    <p className="text-sm text-muted-foreground">
+                      {pushSupported
+                        ? pushPermission === "denied"
+                          ? "Permission denied in browser settings"
+                          : "Receive alerts even when the app is closed"
+                        : "Not supported on this device/browser"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      if (pushEnabled) await disablePush();
+                      else await enablePush();
+                    }}
+                    disabled={!pushSupported || pushPermission === "denied"}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      pushEnabled ? "bg-primary" : "bg-gray-200"
+                    } ${!pushSupported || pushPermission === "denied" ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        pushEnabled ? "translate-x-6" : "translate-x-1"
+                      }`}
+                    />
+                  </button>
+                </div>
+
                 {[
                   { key: "newRequests" as const, label: "New Consent Requests", description: "Get notified when hospitals request access to your data" },
                   { key: "accessLogs" as const, label: "Data Access Logs", description: "Receive updates when your data is accessed" },
@@ -323,6 +361,8 @@ function SettingsContent() {
           </div>
         )}
       </main>
+
+      <BottomTabs />
     </div>
   );
 }

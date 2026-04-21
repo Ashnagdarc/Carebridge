@@ -8,11 +8,16 @@ interface Toast {
   id: string;
   message: string;
   type: ToastType;
+  onClick?: () => void;
 }
 
 interface ToastContextType {
   toasts: Toast[];
-  addToast: (message: string, type: ToastType) => void;
+  addToast: (
+    message: string,
+    type: ToastType,
+    options?: { onClick?: () => void },
+  ) => void;
   removeToast: (id: string) => void;
 }
 
@@ -28,9 +33,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const addToast = useCallback(
-    (message: string, type: ToastType = "info") => {
+    (message: string, type: ToastType = "info", options?: { onClick?: () => void }) => {
       const id = Date.now().toString();
-      const newToast: Toast = { id, message, type };
+      const newToast: Toast = { id, message, type, onClick: options?.onClick };
 
       setToasts((prev) => [...prev, newToast]);
 
@@ -103,15 +108,31 @@ function ToastItem({ toast, onRemove }: ToastItemProps) {
 
   return (
     <div
-      className={`${bgColor} text-white rounded-lg p-3 shadow-lg flex items-start gap-2 pointer-events-auto animate-in fade-in slide-in-from-bottom-4`}
+      className={`${bgColor} text-white rounded-lg p-3 shadow-lg flex items-start gap-2 pointer-events-auto animate-in fade-in slide-in-from-bottom-4 ${
+        toast.onClick ? "cursor-pointer" : ""
+      }`}
+      onClick={toast.onClick}
+      role={toast.onClick ? "button" : undefined}
+      tabIndex={toast.onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (!toast.onClick) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toast.onClick();
+        }
+      }}
     >
       <span className="text-lg font-bold mt-0.5">{icon}</span>
       <div className="flex-1">
         <p className="text-sm font-medium">{toast.message}</p>
       </div>
       <button
-        onClick={onRemove}
+        onClick={(e) => {
+          e.stopPropagation();
+          onRemove();
+        }}
         className="text-white hover:opacity-80 transition-opacity ml-2"
+        aria-label="Dismiss notification"
       >
         ✕
       </button>

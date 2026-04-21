@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
+import { BottomTabs } from "@/components/BottomTabs";
 import { generateUID } from "@/lib/uid";
 
 function DashboardContent() {
@@ -140,6 +141,8 @@ function DashboardContent() {
           </CardBody>
         </Card>
       </main>
+
+      <BottomTabs />
     </div>
   );
 }

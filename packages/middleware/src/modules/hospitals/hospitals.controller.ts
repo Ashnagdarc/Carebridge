@@ -28,8 +28,3 @@ export class HospitalsController {
     return this.hospitalsService.getHospitals();
   }
 }
-  @Get()
-  async getHospitals() {
-    return this.hospitalsService.getHospitals();
-  }
-}

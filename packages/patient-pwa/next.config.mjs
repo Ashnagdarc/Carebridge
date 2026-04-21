@@ -8,5 +8,6 @@ export default withPWA({
   register: true,
   skipWaiting: false,
   sw: 'sw.js',
+  importScripts: ['/notifications-sw.js'],
   disable: process.env.NODE_ENV === 'development',
 })(nextConfig);

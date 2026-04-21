@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ToastProvider } from "@/providers/ToastProvider";
+import { NotificationsProvider } from "@/providers/NotificationsProvider";
 
 export const metadata: Metadata = {
   title: "CareBridge Patient",
@@ -79,9 +80,11 @@ export default function RootLayout({
         </a>
         <ToastProvider>
           <AuthProvider>
-            <main id="main-content" className="min-h-screen">
-              {children}
-            </main>
+            <NotificationsProvider>
+              <main id="main-content" className="min-h-screen">
+                {children}
+              </main>
+            </NotificationsProvider>
           </AuthProvider>
         </ToastProvider>
       </body>

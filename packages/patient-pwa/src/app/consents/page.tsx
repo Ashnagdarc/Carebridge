@@ -10,15 +10,19 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { ConsentRequestCard } from "@/components/ConsentRequestCard";
+import { BottomTabs } from "@/components/BottomTabs";
+import { useNotifications } from "@/hooks/useNotifications";
 
 function ConsentInboxContent() {
   const router = useRouter();
   const { addToast } = useToast();
+  const { markConsentRequestsRead } = useNotifications();
   const [requests, setRequests] = useState<ConsentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
 
   useEffect(() => {
+    markConsentRequestsRead();
     const loadPendingRequests = async () => {
       try {
         setIsLoading(true);
@@ -33,7 +37,7 @@ function ConsentInboxContent() {
     };
 
     loadPendingRequests();
-  }, [addToast]);
+  }, [addToast, markConsentRequestsRead]);
 
   const handleApprove = (requestId: string) => {
     router.push(`/consents/approve/${requestId}`);
@@ -119,6 +123,8 @@ function ConsentInboxContent() {
           </>
         )}
       </main>
+
+      <BottomTabs />
     </div>
   );
 }

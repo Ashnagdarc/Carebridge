@@ -7,6 +7,7 @@ import { HospitalsModule } from './modules/hospitals/hospitals.module';
 import { DataRequestModule } from './modules/data-request/data-request.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { HealthModule } from './modules/health/health.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 import { PrismaService } from './common/prisma/prisma.service';
 
 @Module({
@@ -22,6 +23,7 @@ import { PrismaService } from './common/prisma/prisma.service';
     ConsentModule,
     DataRequestModule,
     AuditModule,
+    NotificationsModule,
   ],
   controllers: [],
   providers: [PrismaService],
