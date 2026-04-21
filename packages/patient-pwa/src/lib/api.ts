@@ -33,6 +33,14 @@ interface BackendPatientAuthResponse {
   };
 }
 
+interface BackendPatientProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  externalId: string;
+}
+
 interface BackendConsentRequest {
   id: string;
   patientId: string;
@@ -133,6 +141,27 @@ function mapPatientAuthResponse(response: BackendPatientAuthResponse): PatientAu
     refreshToken: response.refreshToken || '',
     expiresIn: response.expiresIn,
     tokenType: response.tokenType,
+  };
+}
+
+function mapPatientProfileResponse(profile: BackendPatientProfile): PatientAuthResponse {
+  const accessToken = authApi.getToken();
+  const refreshToken =
+    typeof window === 'undefined'
+      ? ''
+      : localStorage.getItem('carebridge_refresh_token') || '';
+
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: `${profile.firstName} ${profile.lastName}`.trim(),
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    externalId: profile.externalId,
+    accessToken,
+    refreshToken,
+    expiresIn: 0,
+    tokenType: 'Bearer',
   };
 }
 
@@ -248,8 +277,14 @@ export const authApi = {
       throw await readError(response, 'Signup failed');
     }
 
-    const result = unwrapResponse<BackendPatientAuthResponse>(await response.json());
-    return mapPatientAuthResponse(result);
+    const result = unwrapResponse<BackendPatientProfile>(await response.json());
+    const mapped = mapPatientProfileResponse(result);
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('carebridge_user', JSON.stringify(mapped));
+    }
+
+    return mapped;
   },
 
   async login(credentials: LoginRequest): Promise<PatientAuthResponse> {
@@ -318,6 +353,36 @@ export const authApi = {
     if (typeof window === 'undefined') return '';
     const stored = localStorage.getItem('carebridge_access_token');
     return stored || '';
+  },
+
+  async signOutAll(): Promise<void> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/patients/sessions/logout-all`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Failed to sign out all sessions');
+    }
+  },
+
+  async deleteAccount(): Promise<void> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/patients/account`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Failed to delete account');
+    }
   },
 };
 

@@ -17,11 +17,15 @@ else
 fi
 
 FAILED=0
-for service in middleware patient-app admin-dashboard; do
+for service in middleware patient-pwa mock-hospital-a mock-hospital-b; do
   if [ -d "$PROJECT_ROOT/packages/$service" ]; then
     echo ""
     echo -e "${GREEN}Linting $service...${NC}"
     cd "$PROJECT_ROOT/packages/$service"
+    if ! node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.lint ? 0 : 1)"; then
+      echo "No lint script defined for $service; skipping"
+      continue
+    fi
     if eval "$LINT_CMD"; then
       echo -e "${GREEN}✓ $service linting passed${NC}"
     else

@@ -1,4 +1,4 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class PatientSignupDto {
   @IsEmail()
@@ -43,4 +43,26 @@ export class PatientAuthResponseDto {
 export class PatientRefreshDto {
   @IsString()
   refreshToken: string;
+}
+
+export class UpdatePatientProfileDto {
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+
+  @IsOptional()
+  @IsString()
+  lastName?: string;
+
+  @IsOptional()
+  dateOfBirth?: Date | string;
+}
+
+export class ChangePatientPasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword: string;
 }

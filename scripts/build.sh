@@ -9,11 +9,15 @@ NC='\033[0m'
 
 echo -e "${BLUE}🏗️  Building All Services${NC}"
 
-for service in middleware patient-app admin-dashboard; do
+for service in middleware patient-pwa mock-hospital-a mock-hospital-b; do
   if [ -d "$PROJECT_ROOT/packages/$service" ]; then
     echo ""
     echo -e "${GREEN}Building $service...${NC}"
     cd "$PROJECT_ROOT/packages/$service"
+    if ! node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.build ? 0 : 1)"; then
+      echo "No build script defined for $service; skipping"
+      continue
+    fi
     npm run build || echo -e "${RED}⚠ $service build had issues${NC}"
   fi
 done

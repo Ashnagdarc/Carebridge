@@ -441,22 +441,22 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 ## Milestone 3: Integration & Testing (Weeks 5–6)
 
 ### Task 3.1: Create Mock Hospital APIs (A & B)
-**Status:** ⬜ Not Started  
+**Status:** 🚧 In Progress (Iteration 1/2)  
 **Assigned To:** AI / Developer  
-**Iterations:** 0/2  
+**Iterations:** 1/2  
 **Blocked By:** Task 1.6  
 
 **Acceptance Criteria:**
-- [ ] Mock Hospital A API server (Node.js/Express) with data endpoint
-- [ ] Mock Hospital B API server with data request acceptance endpoint
-- [ ] Hospital A `/api/patient-data` endpoint returns sample allergy/medication data
-- [ ] Hospital B `/api/data-delivery` endpoint accepts and logs incoming data
-- [ ] Both mock APIs accept authorization headers and validate them
-- [ ] Docker setup for running both mock hospitals locally
+- [x] Mock Hospital A API server (Node.js/Express) with data endpoint
+- [x] Mock Hospital B API server with data request acceptance endpoint
+- [x] Hospital A `/api/patient-data` endpoint returns sample allergy/medication data
+- [x] Hospital B `/api/data-delivery` endpoint accepts and logs incoming data
+- [x] Both mock APIs accept authorization headers and validate them
+- [x] Docker setup for running both mock hospitals locally
 - [ ] Integration tests simulating middleware ↔ Hospital A/B communication
 
 **Ralph Loop Notes:**
-- Iteration 1: Basic mock endpoints
+- Iteration 1: Basic mock endpoints, Docker wiring, and mock API unit tests
 - Iteration 2: Full request/response cycle, Docker setup
 
 ---

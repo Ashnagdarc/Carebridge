@@ -1,0 +1,16 @@
+{
+  "name": "mock-hospital-a",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Mock source hospital API for CareBridge integration tests",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "node --check server.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}

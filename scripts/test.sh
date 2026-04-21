@@ -11,11 +11,15 @@ NC='\033[0m'
 echo -e "${BLUE}🧪 Testing All Services (${TEST_TYPE})${NC}"
 
 FAILED=0
-for service in middleware patient-app admin-dashboard; do
+for service in middleware patient-pwa mock-hospital-a mock-hospital-b; do
   if [ -d "$PROJECT_ROOT/packages/$service" ]; then
     echo ""
     echo -e "${GREEN}Testing $service...${NC}"
     cd "$PROJECT_ROOT/packages/$service"
+    if ! node -e "const pkg=require('./package.json'); process.exit(pkg.scripts && pkg.scripts.test ? 0 : 1)"; then
+      echo "No test script defined for $service; skipping"
+      continue
+    fi
     if npm test; then
       echo -e "${GREEN}✓ $service tests passed${NC}"
     else

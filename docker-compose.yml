@@ -59,6 +59,40 @@ services:
     networks:
       - carebridge-network
 
+  mock-hospital-a:
+    image: node:18-alpine
+    container_name: carebridge-mock-hospital-a
+    environment:
+      NODE_ENV: development
+      PORT: 4001
+      MOCK_HOSPITAL_TOKEN: mock-hospital-token
+    ports:
+      - '4001:4001'
+    volumes:
+      - ./packages/mock-hospital-a:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - carebridge-network
+
+  mock-hospital-b:
+    image: node:18-alpine
+    container_name: carebridge-mock-hospital-b
+    environment:
+      NODE_ENV: development
+      PORT: 4002
+      MOCK_HOSPITAL_TOKEN: mock-hospital-token
+    ports:
+      - '4002:4002'
+    volumes:
+      - ./packages/mock-hospital-b:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - carebridge-network
+
 volumes:
   postgres_data:
     driver: local

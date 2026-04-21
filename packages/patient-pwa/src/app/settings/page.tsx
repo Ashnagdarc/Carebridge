@@ -18,7 +18,7 @@ type SettingsSection = "account" | "notifications" | "security";
 
 function SettingsContent() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { addToast } = useToast();
   const {
     pushSupported,
@@ -110,8 +110,10 @@ function SettingsContent() {
 
     setLoading(true);
     try {
-      // TODO: API call to sign out all sessions
+      await authApi.signOutAll();
       addToast("Signed out of all devices", "success");
+      logout();
+      router.push("/login");
     } catch (error) {
       addToast("Failed to sign out", "error");
     } finally {
@@ -126,8 +128,9 @@ function SettingsContent() {
 
     setLoading(true);
     try {
-      // TODO: API call to delete account
+      await authApi.deleteAccount();
       addToast("Account deleted", "success");
+      logout();
       router.push("/login");
     } catch (error) {
       addToast("Failed to delete account", "error");

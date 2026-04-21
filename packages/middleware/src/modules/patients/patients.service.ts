@@ -1,8 +1,15 @@
-import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '@src/common/prisma/prisma.service';
-import { PatientSignupDto, PatientLoginDto, PatientAuthResponseDto, PatientRefreshDto } from '@modules/auth/dto/patient-auth.dto';
+import {
+  ChangePatientPasswordDto,
+  PatientAuthResponseDto,
+  PatientLoginDto,
+  PatientRefreshDto,
+  PatientSignupDto,
+  UpdatePatientProfileDto,
+} from '@modules/auth/dto/patient-auth.dto';
 
 @Injectable()
 export class PatientsService {
@@ -222,6 +229,104 @@ export class PatientsService {
     }
 
     return patient;
+  }
+
+  async updatePatientProfile(patientId: string, dto: UpdatePatientProfileDto) {
+    const data: {
+      firstName?: string;
+      lastName?: string;
+      dateOfBirth?: Date | null;
+    } = {};
+
+    if (dto.firstName !== undefined) {
+      const firstName = dto.firstName.trim();
+      if (!firstName) {
+        throw new BadRequestException('firstName cannot be empty');
+      }
+      data.firstName = firstName;
+    }
+
+    if (dto.lastName !== undefined) {
+      const lastName = dto.lastName.trim();
+      if (!lastName) {
+        throw new BadRequestException('lastName cannot be empty');
+      }
+      data.lastName = lastName;
+    }
+
+    if (dto.dateOfBirth !== undefined) {
+      data.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+      if (data.dateOfBirth && Number.isNaN(data.dateOfBirth.getTime())) {
+        throw new BadRequestException('dateOfBirth must be a valid date');
+      }
+    }
+
+    if (Object.keys(data).length === 0) {
+      throw new BadRequestException('No profile fields provided');
+    }
+
+    const patient = await this.prisma.patient.update({
+      where: { id: patientId },
+      data,
+      select: {
+        id: true,
+        email: true,
+        externalId: true,
+        firstName: true,
+        lastName: true,
+        phoneNumber: true,
+        dateOfBirth: true,
+        createdAt: true,
+      },
+    });
+
+    return patient;
+  }
+
+  async changePassword(patientId: string, dto: ChangePatientPasswordDto): Promise<void> {
+    if (!dto.currentPassword || !dto.newPassword) {
+      throw new BadRequestException('currentPassword and newPassword are required');
+    }
+
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: patientId },
+    });
+
+    if (!patient) {
+      throw new BadRequestException('Patient not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(dto.currentPassword, patient.passwordHash);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.patient.update({
+      where: { id: patientId },
+      data: { passwordHash },
+    });
+
+    await this.logoutAll(patientId);
+  }
+
+  async logoutAll(patientId: string): Promise<void> {
+    await this.prisma.session.updateMany({
+      where: {
+        patientId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  }
+
+  async deleteAccount(patientId: string): Promise<void> {
+    await this.prisma.patient.delete({
+      where: { id: patientId },
+    });
   }
 
   async validatePatientToken(patientId: string): Promise<any> {

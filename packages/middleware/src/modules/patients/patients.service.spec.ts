@@ -23,6 +23,7 @@ describe('PatientsService', () => {
               findUnique: jest.fn(),
               create: jest.fn(),
               update: jest.fn(),
+              delete: jest.fn(),
             },
             session: {
               create: jest.fn(),
@@ -198,6 +199,117 @@ describe('PatientsService', () => {
           }),
         }),
       );
+    });
+  });
+
+  describe('updatePatientProfile', () => {
+    it('should update patient profile fields', async () => {
+      const updatedPatient = {
+        id: 'pat_uuid_1',
+        email: 'patient@example.com',
+        externalId: 'PAT-ABC123DEF456',
+        firstName: 'Jane',
+        lastName: 'Doe',
+        phoneNumber: null,
+        dateOfBirth: new Date('1990-01-01'),
+        createdAt: new Date(),
+      };
+
+      prismaService.patient.update.mockResolvedValue(updatedPatient);
+
+      const result = await service.updatePatientProfile('pat_uuid_1', {
+        firstName: ' Jane ',
+        lastName: 'Doe',
+        dateOfBirth: '1990-01-01',
+      });
+
+      expect(result.firstName).toBe('Jane');
+      expect(prismaService.patient.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'pat_uuid_1' },
+          data: expect.objectContaining({
+            firstName: 'Jane',
+            lastName: 'Doe',
+            dateOfBirth: expect.any(Date),
+          }),
+        }),
+      );
+    });
+
+    it('should reject empty profile updates', async () => {
+      await expect(service.updatePatientProfile('pat_uuid_1', {})).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+  });
+
+  describe('changePassword', () => {
+    it('should update password and revoke active sessions', async () => {
+      prismaService.patient.findUnique.mockResolvedValue({
+        id: 'pat_uuid_1',
+        passwordHash: 'old_hash',
+      } as any);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new_hash');
+      prismaService.patient.update.mockResolvedValue({} as any);
+      prismaService.session.updateMany.mockResolvedValue({ count: 2 } as any);
+
+      await service.changePassword('pat_uuid_1', {
+        currentPassword: 'OldPassword123',
+        newPassword: 'NewPassword123',
+      });
+
+      expect(prismaService.patient.update).toHaveBeenCalledWith({
+        where: { id: 'pat_uuid_1' },
+        data: { passwordHash: 'new_hash' },
+      });
+      expect(prismaService.session.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { patientId: 'pat_uuid_1', revokedAt: null },
+        }),
+      );
+    });
+
+    it('should reject an invalid current password', async () => {
+      prismaService.patient.findUnique.mockResolvedValue({
+        id: 'pat_uuid_1',
+        passwordHash: 'old_hash',
+      } as any);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(
+        service.changePassword('pat_uuid_1', {
+          currentPassword: 'WrongPassword123',
+          newPassword: 'NewPassword123',
+        }),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('logoutAll', () => {
+    it('should revoke all active patient sessions', async () => {
+      prismaService.session.updateMany.mockResolvedValue({ count: 2 } as any);
+
+      await service.logoutAll('pat_uuid_1');
+
+      expect(prismaService.session.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { patientId: 'pat_uuid_1', revokedAt: null },
+          data: { revokedAt: expect.any(Date) },
+        }),
+      );
+    });
+  });
+
+  describe('deleteAccount', () => {
+    it('should delete the patient account', async () => {
+      prismaService.patient.delete.mockResolvedValue({} as any);
+
+      await service.deleteAccount('pat_uuid_1');
+
+      expect(prismaService.patient.delete).toHaveBeenCalledWith({
+        where: { id: 'pat_uuid_1' },
+      });
     });
   });
 
