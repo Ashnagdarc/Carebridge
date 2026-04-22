@@ -31,27 +31,27 @@
 
   @media (prefers-color-scheme: dark) {
     :root {
-      --background: 0 0% 0%;
+      --background: 222.2 84% 4.9%;
       --foreground: 210 40% 98%;
-      --card: 0 0% 0%;
+      --card: 222.2 84% 4.9%;
       --card-foreground: 210 40% 98%;
-      --popover: 0 0% 0%;
+      --popover: 222.2 84% 4.9%;
       --popover-foreground: 210 40% 98%;
       --primary: 210 40% 98%;
-      --primary-foreground: 0 0% 7%;
-      --secondary: 0 0% 12%;
+      --primary-foreground: 222.2 47.4% 11.2%;
+      --secondary: 240 4% 12%;
       --secondary-foreground: 210 40% 98%;
-      --muted: 0 0% 18%;
+      --muted: 240 3% 18%;
       --muted-foreground: 215 20.2% 65.1%;
-      --accent: 0 0% 18%;
+      --accent: 240 3% 18%;
       --accent-foreground: 210 40% 98%;
       --destructive: 0 62.8% 30.6%;
       --destructive-foreground: 210 40% 98%;
-      --border: 0 0% 23%;
-      --input: 0 0% 23%;
+      --border: 240 2% 23%;
+      --input: 240 2% 23%;
       --ring: 212.7 26.8% 83.9%;
-      --tertiary: 0 0% 23%;
-      --quaternary: 0 0% 36%;
+      --tertiary: 240 2% 23%;
+      --quaternary: 240 2% 36%;
     }
   }
 }
@@ -159,7 +159,7 @@ input, textarea, select {
 
 input:focus, textarea:focus, select:focus {
   outline: none;
-  border-color: #0a84ff;
+  border-color: #000000;
   box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
 }
 
@@ -194,22 +194,16 @@ button:active {
 /* Skip to main content link */
 .skip-to-main {
   position: absolute;
-  top: 0;
-  left: -999px;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  background: #0a84ff;
+  top: -40px;
+  left: 0;
+  background: #000000;
   color: white;
   padding: 8px;
   z-index: 100;
 }
 
 .skip-to-main:focus {
-  left: 0;
-  width: auto;
-  height: auto;
-  overflow: visible;
+  top: 0;
 }
 
 /* Utility Classes */
