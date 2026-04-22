@@ -1,7 +1,7 @@
 # CareBridge Monorepo Structure
 
 > **Architecture Pattern:** Monorepo with independent services  
-> **Repository:** Single `CareBridge` project containing middleware backend, patient PWA
+> **Repository:** Single `CareBridge` project containing middleware backend, patient PWA, and mock hospital integrations
 
 ## 📦 Project Organization
 
@@ -15,12 +15,13 @@ CareBridge/
 │   │   ├── package.json
 │   │   └── Dockerfile
 │   │
-│   ├── patient-app/     ← Patient-Facing PWA (Next.js)
+│   ├── patient-pwa/     ← Patient-Facing PWA (Next.js)
 │   │   ├── src/
 │   │   ├── package.json
-│   │   └── Dockerfile
+│   │   └── next.config.mjs
 │   │
-│   └── admin-dashboard/ ← Admin Interface (Next.js) [Optional]
+│   ├── mock-hospital-a/ ← Local hospital integration double
+│   └── mock-hospital-b/ ← Local hospital integration double
 │
 ├── docs/                ← Shared documentation
 ├── scripts/             ← Root-level orchestration scripts
@@ -40,16 +41,10 @@ CareBridge/
 - **Endpoints:** `/api/v1/*`
 
 ### Patient App (`packages/patient-app/`)
-- **Purpose:** Mobile-optimized PWA for patient consent management
-- **Technology:** Next.js, React, TypeScript, Tailwind CSS
+- **Purpose:** (Deprecated placeholder) A legacy directory; the active app is `packages/patient-pwa/`
+- **Technology:** N/A
 - **Port:** 3001
-- **Routes:** `/`, `/dashboard`, `/consent/*`, `/settings/*`
-
-### Admin Dashboard (`packages/admin-dashboard/`)
-- **Purpose:** Admin interface for monitoring and auditing
-- **Technology:** Next.js, React, TypeScript
-- **Port:** 3002
-- **Routes:** `/admin/*`
+- **Routes:** N/A
 
 ## 🔄 Service Communication
 
@@ -109,12 +104,6 @@ Each service deployed independently:
 ```bash
 # Middleware
 cd packages/middleware && docker build -t carebridge-middleware:latest .
-
-# Patient App
-cd packages/patient-app && docker build -t carebridge-patient-app:latest .
-
-# Admin Dashboard
-cd packages/admin-dashboard && docker build -t carebridge-admin:latest .
 ```
 
 ---

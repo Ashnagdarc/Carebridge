@@ -8,16 +8,19 @@ import {
   Request,
   UseGuards,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PatientJwtAuthGuard } from '@modules/auth/guards/patient-jwt-auth.guard';
 import { PushSubscriptionDto } from './dto/push-subscription.dto';
 import { PushService } from './push.service';
 
+@ApiTags('notifications')
 @Controller('notifications')
 export class NotificationsController {
   constructor(private readonly pushService: PushService) {}
 
   @Post('push/subscribe')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async subscribePush(
     @Body() dto: PushSubscriptionDto,
     @Request() req: any,
@@ -40,6 +43,7 @@ export class NotificationsController {
 
   @Delete('push/unsubscribe')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async unsubscribePush(@Body() body: { endpoint?: string }, @Request() req: any) {
     if (!body?.endpoint) return { success: true };
     await this.pushService.removeSubscription(req.user.patientId, body.endpoint);

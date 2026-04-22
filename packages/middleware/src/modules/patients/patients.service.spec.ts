@@ -28,6 +28,7 @@ describe('PatientsService', () => {
             session: {
               create: jest.fn(),
               findUnique: jest.fn(),
+              findMany: jest.fn(),
               updateMany: jest.fn(),
               update: jest.fn(),
             },
@@ -310,6 +311,93 @@ describe('PatientsService', () => {
       expect(prismaService.patient.delete).toHaveBeenCalledWith({
         where: { id: 'pat_uuid_1' },
       });
+    });
+  });
+
+  describe('listSessions', () => {
+    it('should list sessions with active and current flags', async () => {
+      const now = Date.now();
+      prismaService.session.findMany.mockResolvedValue([
+        {
+          id: 'sess_1',
+          token: 'access_1',
+          expiresAt: new Date(now + 1000),
+          revokedAt: null,
+          ipAddress: '127.0.0.1',
+          userAgent: 'jest',
+          createdAt: new Date(now - 1000),
+          updatedAt: new Date(now - 500),
+        },
+        {
+          id: 'sess_2',
+          token: 'access_2',
+          expiresAt: new Date(now - 1000),
+          revokedAt: null,
+          ipAddress: null,
+          userAgent: null,
+          createdAt: new Date(now - 2000),
+          updatedAt: new Date(now - 1500),
+        },
+        {
+          id: 'sess_3',
+          token: 'access_3',
+          expiresAt: new Date(now + 1000),
+          revokedAt: new Date(now - 10),
+          ipAddress: null,
+          userAgent: null,
+          createdAt: new Date(now - 3000),
+          updatedAt: new Date(now - 2500),
+        },
+      ]);
+
+      const result = await service.listSessions('pat_uuid_1', 'access_1');
+
+      expect(result.total).toBe(3);
+      expect(result.activeCount).toBe(1);
+      expect(result.sessions).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            id: 'sess_1',
+            isActive: true,
+            isCurrent: true,
+          }),
+          expect.objectContaining({
+            id: 'sess_2',
+            isActive: false,
+            isCurrent: false,
+          }),
+        ]),
+      );
+    });
+  });
+
+  describe('revokeSession', () => {
+    it('should revoke a session belonging to the patient', async () => {
+      prismaService.session.findUnique.mockResolvedValue({
+        id: 'sess_1',
+        patientId: 'pat_uuid_1',
+        revokedAt: null,
+      } as any);
+      prismaService.session.update.mockResolvedValue({} as any);
+
+      await service.revokeSession('pat_uuid_1', 'sess_1');
+
+      expect(prismaService.session.update).toHaveBeenCalledWith({
+        where: { id: 'sess_1' },
+        data: { revokedAt: expect.any(Date) },
+      });
+    });
+
+    it('should reject revoking a session not belonging to the patient', async () => {
+      prismaService.session.findUnique.mockResolvedValue({
+        id: 'sess_other',
+        patientId: 'someone_else',
+        revokedAt: null,
+      } as any);
+
+      await expect(service.revokeSession('pat_uuid_1', 'sess_other')).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 

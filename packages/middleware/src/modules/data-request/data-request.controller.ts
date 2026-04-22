@@ -9,10 +9,13 @@ import {
   Request,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { DataRequestService } from './data-request.service';
 import { CreateDataRequestDto, ListDataRequestsQueryDto } from './dto/data-request.dto';
 import { HospitalJwtAuthGuard } from '../auth/guards/hospital-jwt-auth.guard';
 
+@ApiTags('data-requests')
+@ApiBearerAuth()
 @Controller('data-requests')
 export class DataRequestController {
   constructor(private dataRequestService: DataRequestService) {}

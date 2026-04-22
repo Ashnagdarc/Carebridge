@@ -1,4 +1,12 @@
-import { LoginRequest, SignupRequest, PatientAuthResponse, UpdateProfileRequest, ChangePasswordRequest } from '@/types/auth';
+import {
+  LoginRequest,
+  SignupRequest,
+  PatientAuthResponse,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+  PatientSessionListResponse,
+  PatientSession,
+} from '@/types/auth';
 import {
   ConsentRequest,
   ConsentRecord,
@@ -39,6 +47,24 @@ interface BackendPatientProfile {
   firstName: string;
   lastName: string;
   externalId: string;
+}
+
+interface BackendPatientSession {
+  id: string;
+  expiresAt: string | Date;
+  revokedAt: string | Date | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  isActive: boolean;
+  isCurrent: boolean;
+}
+
+interface BackendPatientSessionListResponse {
+  sessions: BackendPatientSession[];
+  total: number;
+  activeCount: number;
 }
 
 interface BackendConsentRequest {
@@ -168,6 +194,20 @@ function mapPatientProfileResponse(profile: BackendPatientProfile): PatientAuthR
 function toIsoString(value?: string | Date | null): string | undefined {
   if (!value) return undefined;
   return typeof value === 'string' ? value : value.toISOString();
+}
+
+function mapPatientSession(session: BackendPatientSession): PatientSession {
+  return {
+    id: session.id,
+    expiresAt: toIsoString(session.expiresAt) || new Date().toISOString(),
+    revokedAt: toIsoString(session.revokedAt) || null,
+    ipAddress: session.ipAddress,
+    userAgent: session.userAgent,
+    createdAt: toIsoString(session.createdAt) || new Date().toISOString(),
+    updatedAt: toIsoString(session.updatedAt) || new Date().toISOString(),
+    isActive: session.isActive,
+    isCurrent: session.isCurrent,
+  };
 }
 
 function scopesFromDataType(dataType?: string): ConsentScope[] {
@@ -382,6 +422,47 @@ export const authApi = {
 
     if (!response.ok) {
       throw await readError(response, 'Failed to delete account');
+    }
+  },
+
+  async getSessions(): Promise<PatientSessionListResponse> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/patients/sessions`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Failed to fetch sessions');
+    }
+
+    const result = unwrapResponse<BackendPatientSessionListResponse>(await response.json());
+
+    return {
+      sessions: (result.sessions || []).map(mapPatientSession),
+      total: result.total ?? result.sessions?.length ?? 0,
+      activeCount:
+        typeof result.activeCount === 'number'
+          ? result.activeCount
+          : (result.sessions || []).filter((s) => s.isActive).length,
+    };
+  },
+
+  async revokeSession(sessionId: string): Promise<void> {
+    const token = this.getToken();
+    const response = await fetch(`${API_URL}/patients/sessions/${sessionId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw await readError(response, 'Failed to revoke session');
     }
   },
 };

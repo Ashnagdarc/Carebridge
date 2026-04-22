@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, HttpCode, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Request, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PatientsService } from './patients.service';
 import {
   ChangePatientPasswordDto,
@@ -9,6 +10,7 @@ import {
 } from '../auth/dto/patient-auth.dto';
 import { PatientJwtAuthGuard } from '../auth/guards/patient-jwt-auth.guard';
 
+@ApiTags('patients')
 @Controller('patients')
 export class PatientsController {
   constructor(private patientsService: PatientsService) {}
@@ -30,6 +32,7 @@ export class PatientsController {
 
   @Post('logout')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(204)
   async logout(@Request() req: any) {
     await this.patientsService.logout(req.user.patientId, req.headers.authorization?.replace('Bearer ', ''));
@@ -38,18 +41,21 @@ export class PatientsController {
 
   @Get('profile')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async getProfile(@Request() req: any) {
     return this.patientsService.getPatientProfile(req.user.patientId);
   }
 
   @Put('profile')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async updateProfile(@Request() req: any, @Body() dto: UpdatePatientProfileDto) {
     return this.patientsService.updatePatientProfile(req.user.patientId, dto);
   }
 
   @Put('password')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(204)
   async changePassword(@Request() req: any, @Body() dto: ChangePatientPasswordDto) {
     await this.patientsService.changePassword(req.user.patientId, dto);
@@ -58,14 +64,33 @@ export class PatientsController {
 
   @Post('sessions/logout-all')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(204)
   async logoutAll(@Request() req: any) {
     await this.patientsService.logoutAll(req.user.patientId);
     return;
   }
 
+  @Get('sessions')
+  @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
+  async listSessions(@Request() req: any) {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    return this.patientsService.listSessions(req.user.patientId, token);
+  }
+
+  @Delete('sessions/:sessionId')
+  @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(204)
+  async revokeSession(@Request() req: any, @Param('sessionId') sessionId: string) {
+    await this.patientsService.revokeSession(req.user.patientId, sessionId);
+    return;
+  }
+
   @Delete('account')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   @HttpCode(204)
   async deleteAccount(@Request() req: any) {
     await this.patientsService.deleteAccount(req.user.patientId);

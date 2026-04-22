@@ -35,6 +35,24 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface PatientSession {
+  id: string;
+  expiresAt: string;
+  revokedAt: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+  updatedAt: string;
+  isActive: boolean;
+  isCurrent: boolean;
+}
+
+export interface PatientSessionListResponse {
+  sessions: PatientSession[];
+  total: number;
+  activeCount: number;
+}
+
 export interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;

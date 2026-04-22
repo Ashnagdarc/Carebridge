@@ -18,7 +18,7 @@ describe("UID Utilities", () => {
 
     it("should handle single letter names", () => {
       const uid = generateUID("X", "patient-123");
-      expect(uid).toMatch(/^X[A-Z]-\d{5}-\d{4}$/);
+      expect(uid).toMatch(/^XX-\d{5}-\d{4}$/);
     });
 
     it("should generate different UIDs for different names", () => {

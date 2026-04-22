@@ -1,7 +1,7 @@
 # CareBridge Monorepo - Complete Organization
 
-**Last Updated:** April 20, 2026  
-**Status:** ✅ Complete Structure Ready for Development
+**Last Updated:** April 22, 2026  
+**Status:** ✅ Active Monorepo (Implemented)
 
 ---
 
@@ -29,15 +29,17 @@ CareBridge/                              ← Single Repository (Monorepo)
 │   ├── scripts/build.sh                 ← Build all services
 │   ├── scripts/test.sh                  ← Test all services
 │   ├── scripts/lint.sh                  ← Lint all services
-│   └── scripts/deploy.sh                ← Deploy all services (to create)
+│   ├── scripts/deploy.sh                ← Deploy helper (local/dev)
+│   └── scripts/zap-baseline.sh          ← OWASP ZAP baseline scan (manual)
 │
 ├── 📖 Documentation (Shared)
 │   ├── docs/MONOREPO.md                 ← Monorepo structure & boundaries
-│   ├── docs/ARCHITECTURE.md             ← System design (to create)
-│   ├── docs/DEPLOYMENT.md               ← Deployment guide (to create)
-│   ├── docs/SECURITY.md                 ← Security policies (to create)
-│   ├── docs/COMPLIANCE.md               ← HIPAA/GDPR compliance (to create)
-│   └── docs/DATABASE.md                 ← Schema migration guide (to create)
+│   ├── docs/ARCHITECTURE.md             ← System design & key flows
+│   ├── docs/DEPLOYMENT.md               ← Deployment guide
+│   ├── docs/SECURITY.md                 ← Security posture and scanning
+│   ├── docs/DATABASE_SCHEMA.md          ← Database schema overview
+│   ├── docs/TROUBLESHOOTING.md          ← Common issues and fixes
+│   └── docs/adr/                        ← Architecture decision records
 │
 ├── 🤖 Ralph Loop Automation
 │   ├── ralph-loop.sh                    ← Iterative development automation
@@ -49,15 +51,7 @@ CareBridge/                              ← Single Repository (Monorepo)
 │   │   ├── src/
 │   │   │   ├── main.ts                  ← App entry point
 │   │   │   ├── app.module.ts            ← Root module
-│   │   │   ├── auth/                    ← Authentication (OAuth2/JWT)
-│   │   │   ├── consent/                 ← Consent management
-│   │   │   ├── patients/                ← Patient management
-│   │   │   ├── hospitals/               ← Hospital management
-│   │   │   ├── data-requests/           ← Data routing
-│   │   │   ├── audit/                   ← Audit logging
-│   │   │   ├── notifications/           ← Notifications & WebSocket
-│   │   │   ├── common/                  ← Guards, filters, interceptors
-│   │   │   └── config/                  ← Configuration
+│   │   │   └── modules/                 ← Feature modules (auth, consent, routing, audit, etc.)
 │   │   ├── prisma/
 │   │   │   ├── schema.prisma            ← Database schema
 │   │   │   ├── seed.ts                  ← Test data seeding
@@ -67,52 +61,36 @@ CareBridge/                              ← Single Repository (Monorepo)
 │   │   ├── tsconfig.json                ← TypeScript config
 │   │   ├── .env.example                 ← Environment template
 │   │   ├── Dockerfile                   ← Production image
-│   │   ├── Dockerfile.dev               ← Development image
 │   │   └── README.md                    ← Service-specific documentation
 │   │
-│   ├── packages/patient-app/            ← Patient-Facing PWA Service
+│   ├── packages/patient-pwa/            ← Patient-Facing PWA Service
 │   │   ├── src/
 │   │   │   ├── app/
-│   │   │   │   ├── layout.tsx           ← Root layout (HIG styles)
-│   │   │   │   ├── auth/                ← Login/signup pages
-│   │   │   │   ├── dashboard/           ← Main dashboard
-│   │   │   │   ├── consent/             ← Consent inbox & approval
-│   │   │   │   └── settings/            ← Settings & profile
+│   │   │   │   ├── (auth)/              ← Login/signup pages
+│   │   │   │   ├── dashboard/           ← Main dashboard (UID + QR)
+│   │   │   │   ├── consents/            ← Inbox/approve/history
+│   │   │   │   └── settings/            ← Profile, sessions, notifications
 │   │   │   ├── components/              ← Reusable React components
 │   │   │   ├── hooks/                   ← Custom React hooks
-│   │   │   ├── services/                ← API client services
 │   │   │   ├── types/                   ← TypeScript interfaces
 │   │   │   ├── lib/                     ← Utility functions
-│   │   │   └── utils/                   ← Constants & helpers
+│   │   │   └── providers/               ← React context providers
 │   │   ├── public/
 │   │   │   ├── manifest.json            ← PWA manifest
-│   │   │   ├── sw.js                    ← Service Worker
 │   │   │   └── icons/                   ← App icons & assets
-│   │   ├── test/                        ← Component & hook tests
+│   │   ├── e2e/                         ← Playwright tests
 │   │   ├── package.json                 ← Frontend dependencies
 │   │   ├── tsconfig.json                ← TypeScript config
-│   │   ├── next.config.ts               ← Next.js config
+│   │   ├── next.config.mjs              ← Next.js config
 │   │   ├── tailwind.config.ts           ← Tailwind CSS config
-│   │   ├── .env.example                 ← Environment template
-│   │   ├── Dockerfile                   ← Production image
-│   │   ├── Dockerfile.dev               ← Development image
 │   │   └── README.md                    ← Service-specific documentation
 │   │
-│   └── packages/admin-dashboard/        ← Admin Dashboard Service (Optional)
-│       ├── src/
-│       ├── public/
-│       ├── package.json
-│       ├── tsconfig.json
-│       ├── next.config.ts
-│       ├── .env.example
-│       ├── Dockerfile
-│       └── README.md
+│   ├── packages/mock-hospital-a/        ← Mock hospital integration double
+│   └── packages/mock-hospital-b/        ← Mock hospital integration double
 │
-└── .github/                             ← CI/CD (to create)
+└── .github/                             ← CI/CD
     └── workflows/
-        ├── test.yml
-        ├── build.yml
-        └── deploy.yml
+        └── ci.yml
 ```
 
 ---
@@ -134,7 +112,7 @@ npm run dev
 
 # Option C: Individual services
 cd packages/middleware && npm run dev
-cd packages/patient-app && npm run dev
+cd packages/patient-pwa && npm run dev
 ```
 
 ### 3. **Verify Everything**

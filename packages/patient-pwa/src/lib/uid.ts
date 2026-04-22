@@ -16,8 +16,9 @@ export function generateUID(name: string, externalId: string): string {
     .toUpperCase()
     .padEnd(2, 'X');
 
-  // Use last 5 digits from externalId
-  const idPart = String(externalId).slice(-5).padStart(5, '0');
+  // Use last 5 digits from externalId (digits-only to preserve UID format)
+  const digitsOnly = String(externalId).replace(/\D/g, '');
+  const idPart = digitsOnly.slice(-5).padStart(5, '0');
 
   // Generate 4-digit random suffix
   const suffix = String(Math.floor(Math.random() * 10000))

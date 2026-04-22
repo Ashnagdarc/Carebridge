@@ -1,49 +1,64 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { jest } from "@jest/globals";
-import SettingsPage from "@/app/settings/page";
-import { AuthProvider } from "@/providers/AuthProvider";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ToastProvider } from "@/providers/ToastProvider";
 
-// Mock next/navigation
-const mockPush = jest.fn();
-const mockBack = jest.fn();
 jest.mock("next/navigation", () => ({
   useRouter: () => ({
-    push: mockPush,
-    back: mockBack,
+    push: jest.fn(),
+    back: jest.fn(),
   }),
+  usePathname: () => "/settings",
 }));
 
-// Mock auth hook
-const mockUser = {
-  id: "1",
-  email: "test@example.com",
-  name: "Test User",
-  firstName: "Test",
-  lastName: "User",
-  externalId: "ext123",
-  accessToken: "token",
-  refreshToken: "refresh",
-  expiresIn: 3600,
-  tokenType: "Bearer",
-};
+jest.mock("@/components/ProtectedRoute", () => ({
+  ProtectedRoute: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+jest.mock("@/components/BottomTabs", () => ({
+  BottomTabs: () => null,
+}));
 
 jest.mock("@/hooks/useAuth", () => ({
   useAuth: () => ({
-    user: mockUser,
+    user: {
+      id: "1",
+      email: "test@example.com",
+      name: "Test User",
+      firstName: "Test",
+      lastName: "User",
+      externalId: "ext123",
+      accessToken: "token",
+      refreshToken: "refresh",
+      expiresIn: 3600,
+      tokenType: "Bearer",
+    },
     logout: jest.fn(),
   }),
 }));
 
-// Mock API
+jest.mock("@/hooks/useNotifications", () => ({
+  useNotifications: () => ({
+    pushSupported: false,
+    pushPermission: "default",
+    pushEnabled: false,
+    enablePush: jest.fn(),
+    disablePush: jest.fn(),
+  }),
+}));
+
 jest.mock("@/lib/api", () => ({
   authApi: {
     updateProfile: jest.fn(),
     changePassword: jest.fn(),
+    signOutAll: jest.fn(),
+    deleteAccount: jest.fn(),
+    getSessions: jest.fn(async () => ({ sessions: [], total: 0, activeCount: 0 })),
+    revokeSession: jest.fn(),
     getToken: jest.fn(() => "mock-token"),
   },
 }));
+
+import SettingsPage from "@/app/settings/page";
 
 describe("SettingsPage", () => {
   beforeEach(() => {
@@ -52,17 +67,15 @@ describe("SettingsPage", () => {
 
   const renderSettings = () => {
     render(
-      <AuthProvider>
-        <ToastProvider>
-          <SettingsPage />
-        </ToastProvider>
-      </AuthProvider>
+      <ToastProvider>
+        <SettingsPage />
+      </ToastProvider>
     );
   };
 
   it("renders settings page with account section", () => {
     renderSettings();
-    expect(screen.getByText("Settings")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Settings" })).toBeInTheDocument();
     expect(screen.getByText("Account")).toBeInTheDocument();
     expect(screen.getByText("Notifications")).toBeInTheDocument();
     expect(screen.getByText("Security")).toBeInTheDocument();
@@ -74,7 +87,7 @@ describe("SettingsPage", () => {
     expect(screen.getByDisplayValue("User")).toBeInTheDocument();
   });
 
-  it("switches between sections", () => {
+  it("switches between sections", async () => {
     renderSettings();
 
     // Click notifications tab
@@ -84,6 +97,9 @@ describe("SettingsPage", () => {
     // Click security tab
     fireEvent.click(screen.getByText("Security"));
     expect(screen.getByText("Active Sessions")).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByText("Active Sessions: 0")).toBeInTheDocument();
+    });
   });
 
   it("validates password confirmation", async () => {
@@ -97,7 +113,7 @@ describe("SettingsPage", () => {
       target: { value: "different123" },
     });
 
-    fireEvent.click(screen.getByText("Change Password"));
+    fireEvent.click(screen.getByRole("button", { name: "Change Password" }));
 
     await waitFor(() => {
       expect(screen.getByText("Passwords do not match")).toBeInTheDocument();

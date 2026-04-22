@@ -295,6 +295,9 @@ describe('Data request consent-to-routing integration', () => {
     );
 
     expect(completedRequest.status).toBe(DataRequestStatus.COMPLETED);
+    expect(completedRequest.latencyMs).toEqual(expect.any(Number));
+    expect(completedRequest.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(completedRequest.latencyMs).toBeLessThanOrEqual(5000);
     expect(completedRequest.responseData).toEqual(
       expect.objectContaining({
         retrievedFrom: 'hospital-a',

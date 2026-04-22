@@ -9,6 +9,7 @@ import {
   Request,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { ConsentService } from './consent.service';
 import {
   CreateConsentRequestDto,
@@ -19,6 +20,7 @@ import {
 import { HospitalJwtAuthGuard } from '../auth/guards/hospital-jwt-auth.guard';
 import { PatientJwtAuthGuard } from '../auth/guards/patient-jwt-auth.guard';
 
+@ApiTags('consent')
 @Controller('consent')
 export class ConsentController {
   constructor(private consentService: ConsentService) {}
@@ -29,6 +31,7 @@ export class ConsentController {
    */
   @Post('requests')
   @UseGuards(HospitalJwtAuthGuard)
+  @ApiBearerAuth()
   async createConsentRequest(
     @Body() dto: CreateConsentRequestDto,
     @Request() req: any,
@@ -48,6 +51,7 @@ export class ConsentController {
    */
   @Post('requests/:id/approve')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async approveConsentRequest(
     @Param('id') id: string,
     @Body() dto: ApproveConsentRequestDto,
@@ -71,6 +75,7 @@ export class ConsentController {
    */
   @Post('requests/:id/deny')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async denyConsentRequest(
     @Param('id') id: string,
     @Body() dto: DenyConsentRequestDto,
@@ -94,6 +99,7 @@ export class ConsentController {
    */
   @Delete('records/:id')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async revokeConsent(
     @Param('id') id: string,
     @Body() dto: RevokeConsentDto,
@@ -108,6 +114,7 @@ export class ConsentController {
    */
   @Get('requests/pending')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async listPendingRequests(@Request() req: any) {
     return this.consentService.listPendingConsentRequests(req.user.patientId);
   }
@@ -118,6 +125,7 @@ export class ConsentController {
    */
   @Get('records')
   @UseGuards(PatientJwtAuthGuard)
+  @ApiBearerAuth()
   async listActiveConsents(@Request() req: any) {
     return this.consentService.listActiveConsents(req.user.patientId);
   }
@@ -128,6 +136,7 @@ export class ConsentController {
    */
   @Get('records/:patientId')
   @UseGuards(HospitalJwtAuthGuard)
+  @ApiBearerAuth()
   async getConsentRecords(
     @Param('patientId') patientId: string,
     @Request() req: any,

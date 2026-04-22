@@ -94,7 +94,10 @@ See `.env.example` for all available configuration options:
 - `DATABASE_URL` - PostgreSQL connection string
 - `JWT_SECRET` - JWT signing secret
 - `JWT_EXPIRATION` - Token expiration (seconds)
-- `CORS_ORIGIN` - CORS allowed origin
+- `CORS_ORIGIN` - CORS allowed origins (comma-separated)
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window (ms)
+- `RATE_LIMIT_MAX_REQUESTS` - Max requests per window
+- `ENFORCE_HTTPS` - Enforce HTTPS (true/false)
 - `PORT` - Server port (default: 3000)
 
 ## 📚 API Documentation

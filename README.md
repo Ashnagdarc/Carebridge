@@ -12,10 +12,12 @@ Welcome to CareBridge Middleware! Here's where to find what you need:
 |----------|---------|-----------|
 | **[PRD.md](./PRD.md)** | Complete product requirements & design specifications | Onboarding, design reviews, feature clarification |
 | **[TASKS.md](./TASKS.md)** | Development tasks, acceptance criteria, Ralph Loop tracking | Planning sprints, task assignment, progress tracking |
-| **[API.md](./API.md)** *(to be created)* | API endpoints, request/response formats, examples | API integration, debugging, testing |
+| **[API.md](./API.md)** | API endpoints and quick reference | API integration, debugging, testing |
 | **[README.md](./README.md)** *(this file)* | Quick reference, setup instructions, getting started | First time here? Start here |
-| **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** *(to be created)* | Deep-dive into system architecture, deployment patterns | Understanding the system design |
-| **[docs/SECURITY.md](./docs/SECURITY.md)** *(to be created)* | Security policies, threat model, compliance checklist | Security reviews, deployment |
+| **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** | System architecture and key flows | Understanding the system design |
+| **[docs/SECURITY.md](./docs/SECURITY.md)** | Security posture, scanning, and hardening notes | Security reviews, deployment |
+| **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** | Deployment topology and production checklist | Deployment planning |
+| **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** | Common issues and fixes | Local dev and CI issues |
 
 ---
 
@@ -32,20 +34,16 @@ Welcome to CareBridge Middleware! Here's where to find what you need:
 
 ```
 CareBridge/
-├── PRD.md                    # 👈 START HERE: Complete product requirements
-├── TASKS.md                  # Development tasks and milestones
-├── ralph-loop.sh             # Ralph Loop automation script
-├── backend/                  # NestJS middleware API
-│   ├── src/
-│   ├── prisma/
-│   ├── package.json
-│   └── docker-compose.yml
-├── frontend/                 # Next.js patient PWA
-│   ├── src/
-│   ├── public/
-│   ├── package.json
-│   └── next.config.ts
-└── docs/                     # Additional documentation (to be created)
+├── PRD.md
+├── TASKS.md
+├── docker-compose.yml
+├── scripts/
+├── docs/
+└── packages/
+   ├── middleware/            # NestJS API + Prisma
+   ├── patient-pwa/           # Next.js PWA
+   ├── mock-hospital-a/       # Downstream test double
+   └── mock-hospital-b/       # Downstream test double
 ```
 
 ### Phase 1: Read the Requirements
@@ -66,7 +64,7 @@ CareBridge/
 #### Backend Setup
 
 ```bash
-cd backend
+cd packages/middleware
 
 # Install dependencies
 npm install
@@ -76,27 +74,24 @@ cp .env.example .env
 # Edit .env with local database credentials
 
 # Start PostgreSQL (via Docker Compose)
-docker-compose up -d postgres
+npm run docker:up
 
 # Run database migrations
 npx prisma migrate dev
 
 # Start development server
 npm run dev
-# Backend API will be available at http://localhost:3000
+# Backend API will be available at http://localhost:3000/api/v1
+# Swagger UI (dev): http://localhost:3000/docs
 ```
 
 #### Frontend Setup
 
 ```bash
-cd frontend
+cd packages/patient-pwa
 
 # Install dependencies
 npm install
-
-# Configure environment variables
-cp .env.example .env
-# Edit .env with API URL (e.g., http://localhost:3000)
 
 # Start development server
 npm run dev

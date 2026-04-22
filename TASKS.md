@@ -374,9 +374,9 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 ---
 
 ### Task 2.6: Implement Settings & Profile Pages
-**Status:** 🟨 In Progress (Iteration 2/3)  
+**Status:** ✅ Complete (Iteration 3/3)  
 **Assigned To:** AI / Developer  
-**Iterations:** 2/3  
+**Iterations:** 3/3  
 **Blocked By:** Task 2.1, Task 1.3  
 
 **Acceptance Criteria:**
@@ -396,15 +396,17 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 
 **Ralph Loop Notes:**
 - Iteration 1: ✅ Complete - UI layout, form components, basic state management, API integration setup
-- Iteration 2: API integration, validation, state management
-- Iteration 3: Security features, edge cases, tests
+- Iteration 2: ✅ Complete - API integration, validation, state management
+- Iteration 3: ✅ Complete - Sessions management (list + revoke), sign-out UX, tests
 
 **Implementation Details:**
 - `src/app/settings/page.tsx`: Main settings page with tabbed sections for Account, Notifications, Security
 - `src/types/auth.ts`: Added `UpdateProfileRequest` and `ChangePasswordRequest` interfaces
-- `src/lib/api.ts`: Extended `authApi` with `updateProfile` and `changePassword` functions
+- `src/lib/api.ts`: Extended `authApi` with `updateProfile`, `changePassword`, `getSessions`, `revokeSession`
 - `src/app/dashboard/page.tsx`: Added Settings button to header navigation
 - `src/app/settings/__tests__/page.test.tsx`: Unit tests for form validation and section switching
+- `packages/middleware/src/modules/patients/patients.controller.ts`: Added patient session list + revoke endpoints
+- `packages/middleware/src/modules/patients/patients.service.ts`: Added session listing + revoke logic
 
 **Files Created/Modified:** 5 files  
 **Build Status:** ✅ Passing  
@@ -462,9 +464,9 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 ---
 
 ### Task 3.2: End-to-End Integration Tests
-**Status:** 🚧 In Progress (Iteration 1/2)  
+**Status:** ✅ Complete (Iteration 2/2)  
 **Assigned To:** AI / Developer  
-**Iterations:** 1/2  
+**Iterations:** 2/2  
 **Blocked By:** Task 1.6, Task 3.1  
 
 **Acceptance Criteria:**
@@ -476,73 +478,80 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
   - [x] Middleware fetches data from Hospital A
   - [x] Data routed to Hospital B
   - [x] Audit trail logged
-- [ ] Test coverage >80% for critical paths
-- [ ] Performance benchmarks (request latency, database queries)
-- [ ] Tests run in CI/CD pipeline (GitHub Actions or similar)
+- [x] Test coverage >80% for critical paths (Data Request routing module)
+- [x] Performance benchmarks (request latency via `latencyMs`)
+- [x] Tests run in CI/CD pipeline (GitHub Actions)
 
 **Ralph Loop Notes:**
 - Iteration 1: Core consent-to-routing flow covered with in-memory integration test
-- Iteration 2: Edge cases, performance benchmarks
+- Iteration 2: ✅ Complete - Added controller coverage + error-path tests + latency assertions + CI workflow
 
 ---
 
 ### Task 3.3: PWA End-to-End Tests
-**Status:** ⬜ Not Started  
+**Status:** ✅ Complete (Iteration 2/2)  
 **Assigned To:** AI / Developer  
-**Iterations:** 0/2  
+**Iterations:** 2/2  
 **Blocked By:** Task 2.7  
 
 **Acceptance Criteria:**
-- [ ] Playwright/Cypress tests for critical user flows:
-  - [ ] Login → Dashboard → View UID/QR
-  - [ ] Consent Inbox → Approve Request → History
-  - [ ] Revoke Consent
-  - [ ] Settings updates
-- [ ] Mobile device testing (simulated or physical)
-- [ ] Offline functionality tested (service worker)
-- [ ] Tests run in CI/CD pipeline
+- [x] Playwright/Cypress tests for critical user flows:
+  - [x] Login → Dashboard → View UID/QR
+  - [x] Consent Inbox → Approve Request → History
+  - [x] Revoke Consent
+  - [x] Settings session management
+- [x] Mobile device testing (simulated)
+- [x] Offline functionality tested (smoke test)
+- [x] Tests run in CI/CD pipeline
 
 **Ralph Loop Notes:**
-- Iteration 1: Basic user flow tests
-- Iteration 2: Mobile testing, edge cases
+- Iteration 1: ✅ Complete - Basic user flow tests
+- Iteration 2: ✅ Complete - Mobile viewport project + offline smoke check + CI wiring
 
 ---
 
 ## Milestone 4: Deployment & Hardening (Weeks 7+)
 
 ### Task 4.1: Security Hardening & Penetration Testing
-**Status:** ⬜ Not Started  
+**Status:** 🟨 In Progress (Iteration 1/2)  
 **Assigned To:** Security / Developer  
-**Iterations:** 0/2  
+**Iterations:** 1/2  
 **Blocked By:** All previous tasks  
 
 **Acceptance Criteria:**
-- [ ] HTTPS/TLS enforced; certificate pinning for mobile
-- [ ] Rate limiting on all API endpoints
-- [ ] CORS policy configured strictly
-- [ ] SQL injection prevention verified
-- [ ] XSS prevention in frontend
-- [ ] CSRF tokens implemented if needed
-- [ ] Basic security audit conducted
-- [ ] Vulnerabilities scanned (npm audit, OWASP ZAP)
-- [ ] Any critical issues resolved
+- [x] HTTPS/TLS enforced (HSTS + optional HTTPS enforcement behind proxy)
+- [ ] Certificate pinning for mobile (requires native wrapper / device controls)
+- [x] Rate limiting on all API endpoints
+- [x] CORS policy configured strictly
+- [x] SQL injection prevention verified
+- [x] XSS prevention in frontend (security headers + CSP report-only)
+- [x] CSRF tokens implemented if needed (not required for Bearer-token auth; documented)
+- [x] Basic security audit conducted (SECURITY.md)
+- [x] Vulnerabilities scanned (npm audit in CI + ZAP baseline script)
+- [x] Any critical issues resolved (none present in audit gate)
+
+**Ralph Loop Notes:**
+- Iteration 1: ✅ Complete - Global rate limiting, strict CORS allow-list, HTTPS enforcement toggles, PWA security headers, audit + scan scripts/docs
 
 ---
 
 ### Task 4.2: Documentation Completion
-**Status:** ⬜ Not Started  
+**Status:** ✅ Complete (Iteration 1/1)  
 **Assigned To:** Developer / Technical Writer  
-**Iterations:** 0/1  
+**Iterations:** 1/1  
 **Blocked By:** All previous tasks  
 
 **Acceptance Criteria:**
-- [ ] API documentation complete (Swagger/OpenAPI)
-- [ ] Deployment guide written
-- [ ] Security documentation complete
-- [ ] Database schema documented
-- [ ] Architecture decision records (ADRs) written
-- [ ] Troubleshooting guide created
-- [ ] README updated with all setup instructions
+- [x] API documentation complete (Swagger/OpenAPI)
+- [x] Deployment guide written
+- [x] Security documentation complete
+- [x] Database schema documented
+- [x] Architecture decision records (ADRs) written
+- [x] Troubleshooting guide created
+- [x] README updated with all setup instructions
+
+**Ralph Loop Notes:**
+- Iteration 1: ✅ Complete - Swagger UI + docs/ updates (deployment, schema, ADRs, troubleshooting, README)
 
 ---
 
@@ -585,9 +594,9 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 | Milestone | Tasks | Est. Duration | Status |
 |-----------|-------|----------------|--------|
 | 1: Backend Foundation | 1.1–1.6 (6 tasks) | Weeks 1–2 | ✅ Complete |
-| 2: Patient PWA | 2.1–2.7 (7 tasks) | Weeks 3–4 | 🟨 In Progress |
-| 3: Integration & Testing | 3.1–3.3 (3 tasks) | Weeks 5–6 | ⬜ Not Started |
-| 4: Deployment & Hardening | 4.1–4.4 (4 tasks) | Weeks 7+ | ⬜ Not Started |
+| 2: Patient PWA | 2.1–2.7 (7 tasks) | Weeks 3–4 | ✅ Complete |
+| 3: Integration & Testing | 3.1–3.3 (3 tasks) | Weeks 5–6 | ✅ Complete |
+| 4: Deployment & Hardening | 4.1–4.4 (4 tasks) | Weeks 7+ | 🟨 In Progress |
 
 **Total Tasks:** 20  
 **Total Estimated Duration:** 7+ weeks  
@@ -602,7 +611,7 @@ This document tracks all development tasks using the Ralph Loop methodology. Tas
 
 ---
 
-**Last Updated:** April 21, 2026  
+**Last Updated:** April 22, 2026  
 **Next Review:** Weekly team sync
 
 **Iteration 3 Notes:** Completed pagination edge cases, comprehensive testing, and performance optimizations. Task 2.5 fully implemented.

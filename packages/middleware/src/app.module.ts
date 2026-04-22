@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AuthModule } from './modules/auth/auth.module';
 import { PatientsModule } from './modules/patients/patients.module';
 import { ConsentModule } from './modules/consent/consent.module';
@@ -16,6 +19,27 @@ import { PrismaService } from './common/prisma/prisma.service';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const windowMsRaw = configService.get<string>('RATE_LIMIT_WINDOW_MS') ?? '900000';
+        const limitRaw = configService.get<string>('RATE_LIMIT_MAX_REQUESTS') ?? '100';
+
+        const windowMs = Number(windowMsRaw);
+        const limit = Number(limitRaw);
+
+        const ttlSeconds = Number.isFinite(windowMs) ? Math.max(1, Math.floor(windowMs / 1000)) : 900;
+        const limitRequests = Number.isFinite(limit) ? Math.max(1, Math.floor(limit)) : 100;
+
+        return [
+          {
+            ttl: ttlSeconds,
+            limit: limitRequests,
+          },
+        ];
+      },
+    }),
     HealthModule,
     AuthModule,
     HospitalsModule,
@@ -26,6 +50,12 @@ import { PrismaService } from './common/prisma/prisma.service';
     NotificationsModule,
   ],
   controllers: [],
-  providers: [PrismaService],
+  providers: [
+    PrismaService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

@@ -7,10 +7,15 @@ Your complete CareBridge project structure is now ready with:
 ### ✅ Core Documentation
 - **PRD.md** - Complete product requirements (14 sections, ~15,000 words)
 - **TASKS.md** - 20 development tasks across 4 milestones
-- **API.md** - Full API endpoint documentation with examples
+- **API.md** - API quick reference (source of truth is Swagger UI)
 - **README.md** - Quick-start guide and developer reference
 - **MONOREPO_SUMMARY.md** - Complete project overview
 - **docs/MONOREPO.md** - Monorepo structure and boundaries
+- **docs/ARCHITECTURE.md** - System design & key flows
+- **docs/DEPLOYMENT.md** - Deployment guide
+- **docs/SECURITY.md** - Security posture and scanning
+- **docs/DATABASE_SCHEMA.md** - Database schema overview
+- **docs/TROUBLESHOOTING.md** - Common issues and fixes
 
 ### ✅ Orchestration & Automation
 - **package.json** - Root npm workspaces configuration
@@ -53,8 +58,9 @@ CareBridge/
 CareBridge (One Repository)
 │
 ├─ packages/middleware/        ← Backend API (NestJS + PostgreSQL)
-├─ packages/patient-app/       ← Frontend PWA (Next.js + React)
-└─ packages/admin-dashboard/   ← Admin Interface (Next.js + React)
+├─ packages/patient-pwa/       ← Patient PWA (Next.js + React)
+├─ packages/mock-hospital-a/   ← Mock hospital integration double
+└─ packages/mock-hospital-b/   ← Mock hospital integration double
 ```
 
 **All services communicate via HTTP APIs - No shared databases or internal messaging**
@@ -75,7 +81,7 @@ CareBridge (One Repository)
 # See TASKS.md Task 1.1 for details
 ```
 
-### 2. Create Frontend Service (`packages/patient-app/`)
+### 2. Create Frontend Service (`packages/patient-pwa/`)
 ```bash
 # Initialize the frontend service with:
 # - Next.js PWA setup
@@ -84,12 +90,6 @@ CareBridge (One Repository)
 # - Login/signup pages
 # - Consent management UI
 # See TASKS.md Task 2.1 for details
-```
-
-### 3. Create Admin Service (Optional)
-```bash
-# Similar to patient-app, but for admin dashboard
-# See TASKS.md for relevant tasks
 ```
 
 ---
@@ -136,6 +136,9 @@ CareBridge (One Repository)
 | **API.md** | All API endpoints with examples |
 | **MONOREPO.md** | Monorepo structure & service boundaries |
 | **MONOREPO_SUMMARY.md** | Complete project overview |
+| **docs/SECURITY.md** | Security posture and scanning |
+| **docs/DEPLOYMENT.md** | Deployment guide |
+| **docs/TROUBLESHOOTING.md** | Common issues and fixes |
 
 ---
 
@@ -154,7 +157,7 @@ CareBridge (One Repository)
 ✅ **Complete Architecture**
 - Middleware backend (NestJS + PostgreSQL)
 - Patient PWA (Next.js + React)
-- Admin dashboard (Next.js + React)
+- Mock hospital integration doubles
 - All communicating via REST APIs
 
 ✅ **Apple HIG Design**

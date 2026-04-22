@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { DataRequestService } from './data-request.service';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { ConsentService } from '../consent/consent.service';
@@ -233,6 +233,62 @@ describe('DataRequestService', () => {
           action: 'data_request_completed',
           status: 'success',
         }),
+      );
+    });
+
+    it('should surface service unavailable errors from target hospital', async () => {
+      prismaService.patient.findUnique.mockResolvedValue({ id: 'pat_1' } as any);
+      prismaService.hospital.findUnique
+        .mockResolvedValueOnce({ id: 'hosp_2', endpoint: 'http://hospital-a.test' } as any)
+        .mockResolvedValueOnce({ id: 'hosp_1', endpoint: 'http://hospital-b.test' } as any);
+      consentService.hasActiveConsent.mockResolvedValue(true);
+
+      const dataRequest = {
+        id: 'data_req_1',
+        ...createDto,
+        status: DataRequestStatus.PENDING,
+        requestedAt: new Date(),
+      };
+      prismaService.dataRequest.create.mockResolvedValue(dataRequest as any);
+      prismaService.dataRequest.update.mockResolvedValue(dataRequest as any);
+
+      httpService.get.mockReturnValue(
+        throwError(() => ({ response: { status: 503 }, message: 'Service Unavailable' })) as any,
+      );
+
+      await expect(service.createDataRequest(createDto, 'hosp_1')).rejects.toThrow(
+        /service unavailable/i,
+      );
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'data_request_failed',
+          status: 'failed',
+        }),
+      );
+    });
+
+    it('should surface authentication failures from target hospital', async () => {
+      prismaService.patient.findUnique.mockResolvedValue({ id: 'pat_1' } as any);
+      prismaService.hospital.findUnique
+        .mockResolvedValueOnce({ id: 'hosp_2', endpoint: 'http://hospital-a.test' } as any)
+        .mockResolvedValueOnce({ id: 'hosp_1', endpoint: 'http://hospital-b.test' } as any);
+      consentService.hasActiveConsent.mockResolvedValue(true);
+
+      const dataRequest = {
+        id: 'data_req_1',
+        ...createDto,
+        status: DataRequestStatus.PENDING,
+        requestedAt: new Date(),
+      };
+      prismaService.dataRequest.create.mockResolvedValue(dataRequest as any);
+      prismaService.dataRequest.update.mockResolvedValue(dataRequest as any);
+
+      httpService.get.mockReturnValue(
+        throwError(() => ({ response: { status: 401 }, message: 'Unauthorized' })) as any,
+      );
+
+      await expect(service.createDataRequest(createDto, 'hosp_1')).rejects.toThrow(
+        UnauthorizedException,
       );
     });
   });

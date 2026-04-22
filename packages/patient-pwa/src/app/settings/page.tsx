@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -11,7 +11,11 @@ import { FormInput } from "@/components/FormInput";
 import { BottomTabs } from "@/components/BottomTabs";
 import { useToast } from "@/providers/ToastProvider";
 import { authApi } from "@/lib/api";
-import { UpdateProfileRequest, ChangePasswordRequest } from "@/types/auth";
+import {
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+  PatientSession,
+} from "@/types/auth";
 import { useNotifications } from "@/hooks/useNotifications";
 
 type SettingsSection = "account" | "notifications" | "security";
@@ -51,7 +55,35 @@ function SettingsContent() {
     expiryReminders: true,
   });
 
+  const [sessions, setSessions] = useState<PatientSession[]>([]);
+  const [activeSessionCount, setActiveSessionCount] = useState(0);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
+  const [sessionsOpen, setSessionsOpen] = useState(false);
+
   const [loading, setLoading] = useState(false);
+
+  const loadSessions = async () => {
+    setSessionsLoading(true);
+    setSessionsError(null);
+    try {
+      const result = await authApi.getSessions();
+      setSessions(result.sessions);
+      setActiveSessionCount(result.activeCount);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to load sessions";
+      setSessionsError(message);
+    } finally {
+      setSessionsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSection === "security") {
+      loadSessions();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSection]);
 
   const handleAccountUpdate = async () => {
     setLoading(true);
@@ -136,6 +168,33 @@ function SettingsContent() {
       addToast("Failed to delete account", "error");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSignOutThisDevice = async () => {
+    if (!confirm("Sign out of this device?")) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      addToast("Signed out", "success");
+      logout();
+      router.push("/login");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRevokeSession = async (sessionId: string) => {
+    setSessionsLoading(true);
+    try {
+      await authApi.revokeSession(sessionId);
+      addToast("Session signed out", "success");
+      await loadSessions();
+    } catch (error) {
+      addToast("Failed to sign out session", "error");
+      setSessionsLoading(false);
     }
   };
 
@@ -323,11 +382,32 @@ function SettingsContent() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium">Current Session</p>
-                      <p className="text-sm text-muted-foreground">This device</p>
+                      <p className="font-medium">
+                        Active Sessions: {sessionsLoading ? "…" : activeSessionCount}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {sessionsError ? sessionsError : "Manage devices signed in to your account"}
+                      </p>
                     </div>
-                    <span className="text-sm text-green-600">Active</span>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setSessionsOpen(true)}
+                      loading={sessionsLoading}
+                      disabled={Boolean(sessionsError)}
+                    >
+                      View Sessions
+                    </Button>
                   </div>
+
+                  <Button
+                    variant="secondary"
+                    onClick={handleSignOutThisDevice}
+                    loading={loading}
+                    className="w-full"
+                  >
+                    Sign Out (This Device)
+                  </Button>
+
                   <Button
                     variant="danger"
                     onClick={handleSignOutAll}
@@ -339,6 +419,83 @@ function SettingsContent() {
                 </div>
               </CardBody>
             </Card>
+
+            {sessionsOpen && (
+              <div
+                className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-4"
+                role="dialog"
+                aria-modal="true"
+                aria-label="Sessions"
+                onClick={() => setSessionsOpen(false)}
+              >
+                <div
+                  className="w-full max-w-md"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <Card>
+                    <CardBody>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-semibold">Sessions</h4>
+                        <button
+                          className="text-sm text-muted-foreground hover:text-foreground"
+                          onClick={() => setSessionsOpen(false)}
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      <div className="space-y-3">
+                        {sessions.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">
+                            No sessions found.
+                          </p>
+                        ) : (
+                          sessions.map((session) => (
+                            <div
+                              key={session.id}
+                              className="border border-border rounded-lg p-3 space-y-2"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="font-medium truncate">
+                                    {session.isCurrent ? "Current device" : "Device session"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground truncate">
+                                    {session.userAgent || "Unknown device"}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Created{" "}
+                                    {new Date(session.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                                <div className="flex flex-col items-end gap-2">
+                                  <span
+                                    className={`text-xs ${
+                                      session.isActive ? "text-green-600" : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {session.isActive ? "Active" : "Inactive"}
+                                  </span>
+                                  {!session.isCurrent && session.isActive && (
+                                    <Button
+                                      variant="danger"
+                                      onClick={() => handleRevokeSession(session.id)}
+                                      loading={sessionsLoading}
+                                    >
+                                      Sign Out
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </CardBody>
+                  </Card>
+                </div>
+              </div>
+            )}
 
             <Card>
               <CardBody>

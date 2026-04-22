@@ -1,8 +1,10 @@
 import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { HospitalsService } from './hospitals.service';
 import { HospitalRegisterDto, HospitalLoginDto } from '../auth/dto/hospital-auth.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+@ApiTags('hospitals')
 @Controller('hospitals')
 export class HospitalsController {
   constructor(private hospitalsService: HospitalsService) {}
@@ -19,6 +21,7 @@ export class HospitalsController {
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   async getProfile(@Request() req: any) {
     return this.hospitalsService.getHospitalById(req.user.hospitalId);
   }

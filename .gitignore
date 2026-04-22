@@ -26,3 +26,8 @@ pnpm-debug.log*
 
 # Local tooling
 .ralph-logs/
+.zap/
+
+# Playwright
+playwright-report/
+test-results/

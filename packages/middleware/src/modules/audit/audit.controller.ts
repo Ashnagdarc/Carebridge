@@ -7,11 +7,14 @@ import {
   Request,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AuditService } from './audit.service';
 import { ListAuditLogsQueryDto } from './dto/audit.dto';
 import { HospitalJwtAuthGuard } from '../auth/guards/hospital-jwt-auth.guard';
 import { PatientJwtAuthGuard } from '../auth/guards/patient-jwt-auth.guard';
 
+@ApiTags('audit')
+@ApiBearerAuth()
 @Controller('audit')
 export class AuditController {
   constructor(private auditService: AuditService) {}

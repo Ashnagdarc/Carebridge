@@ -323,6 +323,71 @@ export class PatientsService {
     });
   }
 
+  async listSessions(patientId: string, currentToken?: string) {
+    const sessions = await this.prisma.session.findMany({
+      where: { patientId },
+      orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        token: true,
+        expiresAt: true,
+        revokedAt: true,
+        ipAddress: true,
+        userAgent: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    const now = Date.now();
+    const mapped = sessions.map((session) => {
+      const isActive =
+        session.revokedAt === null && session.expiresAt.getTime() > now;
+
+      return {
+        id: session.id,
+        expiresAt: session.expiresAt,
+        revokedAt: session.revokedAt,
+        ipAddress: session.ipAddress,
+        userAgent: session.userAgent,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt,
+        isActive,
+        isCurrent: Boolean(currentToken && session.token === currentToken),
+      };
+    });
+
+    return {
+      sessions: mapped,
+      total: mapped.length,
+      activeCount: mapped.filter((s) => s.isActive).length,
+    };
+  }
+
+  async revokeSession(patientId: string, sessionId: string): Promise<void> {
+    const session = await this.prisma.session.findUnique({
+      where: { id: sessionId },
+      select: {
+        id: true,
+        patientId: true,
+        revokedAt: true,
+      },
+    });
+
+    if (!session || session.patientId !== patientId) {
+      throw new BadRequestException('Session not found');
+    }
+
+    if (session.revokedAt) {
+      return;
+    }
+
+    await this.prisma.session.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   async deleteAccount(patientId: string): Promise<void> {
     await this.prisma.patient.delete({
       where: { id: patientId },

@@ -1,122 +1,97 @@
 # CareBridge Middleware API Documentation
 
-> **Status:** Template (to be completed during development)  
-> Last Updated: April 20, 2026
+> **Status:** ✅ Source of truth is Swagger/OpenAPI  
+> Last Updated: April 22, 2026
 
 ---
 
 ## 📖 Overview
 
-This document provides comprehensive API documentation for CareBridge Middleware, including all endpoints, authentication methods, request/response formats, and examples.
+The primary, up-to-date API documentation is generated from the middleware and available at:
 
-**Base URL:** `https://api.carebridge.example.com/api/v1`  
-**API Version:** 1.0  
-**Authentication:** OAuth2 (hospitals) + JWT (patients)  
+- `http://localhost:3000/docs` (local/dev)
+
+This file is a quick reference to major endpoints and auth patterns.
+
+**Base URL (local):** `http://localhost:3000/api/v1`  
+**Authentication:** Bearer tokens for patient and hospital endpoints  
 
 ---
 
 ## Table of Contents
 
 1. [Authentication](#authentication)
-2. [Common Response Format](#common-response-format)
-3. [Error Handling](#error-handling)
-4. [Hospital Endpoints](#hospital-endpoints)
-5. [Patient Endpoints](#patient-endpoints)
-6. [Consent Management](#consent-management)
-7. [Data Requests & Routing](#data-requests--routing)
-8. [Audit Logs](#audit-logs)
-9. [Rate Limiting & Pagination](#rate-limiting--pagination)
-10. [Code Examples](#code-examples)
+2. [Endpoints](#endpoints)
 
 ---
 
 ## Authentication
 
-### OAuth2 (Hospital System Authentication)
+All authenticated endpoints use:
 
-**Flow:** Client Credentials  
-**Grant Type:** `client_credentials`  
-**Scope:** Hospital can specify required scopes (e.g., `data:read`, `data:write`, `consent:read`)
-
-#### Hospital Login Endpoint
-
-```http
-POST /auth/hospitals/login
-Content-Type: application/x-www-form-urlencoded
-
-grant_type=client_credentials
-&client_id={hospital_id}
-&client_secret={hospital_secret}
-&scope=data:read data:write
+```
+Authorization: Bearer <access_token>
 ```
 
-**Response (200 OK):**
-```json
-{
-  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "token_type": "Bearer",
-  "expires_in": 3600,
-  "scope": "data:read data:write"
-}
-```
+## Endpoints
 
-**Headers for Subsequent Requests:**
-```
-Authorization: Bearer {access_token}
-```
+### Health
 
-### JWT (Patient Authentication)
+- `GET /health`
+- `GET /health/ready`
 
-#### Patient Signup
+### Hospitals
 
-```http
-POST /auth/patients/signup
-Content-Type: application/json
+- `POST /hospitals/register`
+- `POST /hospitals/login`
+- `GET /hospitals/profile` (auth)
+- `GET /hospitals`
 
-{
-  "first_name": "John",
-  "last_name": "Doe",
-  "email": "john@example.com",
-  "password": "SecurePassword123!",
-  "date_of_birth": "1990-01-15"
-}
-```
+### Patients
 
-**Response (201 Created):**
-```json
-{
-  "id": "patient-uuid-001",
-  "uid": "JD-12345-6789",
-  "email": "john@example.com",
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expires_in": 3600
-}
-```
+- `POST /patients/signup`
+- `POST /patients/login`
+- `POST /patients/refresh`
+- `POST /patients/logout` (auth)
+- `GET /patients/profile` (auth)
+- `PUT /patients/profile` (auth)
+- `PUT /patients/password` (auth)
+- `POST /patients/sessions/logout-all` (auth)
+- `GET /patients/sessions` (auth)
+- `DELETE /patients/sessions/:sessionId` (auth)
+- `DELETE /patients/account` (auth)
 
-#### Patient Login
+### Consent
 
-```http
-POST /auth/patients/login
-Content-Type: application/json
+- `POST /consent/requests` (hospital auth)
+- `POST /consent/requests/:id/approve` (patient auth)
+- `POST /consent/requests/:id/deny` (patient auth)
+- `GET /consent/requests/pending` (patient auth)
+- `GET /consent/records` (patient auth)
+- `DELETE /consent/records/:id` (patient auth)
+- `GET /consent/records/:patientId` (hospital auth)
 
-{
-  "email": "john@example.com",
-  "password": "SecurePassword123!"
-}
-```
+### Data Requests
 
-**Response (200 OK):**
-```json
-{
-  "id": "patient-uuid-001",
-  "uid": "JD-12345-6789",
-  "email": "john@example.com",
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "expires_in": 3600
-}
-```
+- `POST /data-requests` (hospital auth)
+- `GET /data-requests/:id` (hospital auth)
+- `GET /data-requests` (hospital auth)
+- `GET /data-requests/hospital/outgoing` (hospital auth)
+- `GET /data-requests/hospital/incoming` (hospital auth)
+- `GET /data-requests/hospital/stats` (hospital auth)
+
+### Audit
+
+- `GET /audit/logs` (hospital auth)
+- `GET /audit/logs/:id` (hospital auth)
+- `GET /audit/patient-logs` (patient auth)
+- `GET /audit/hospital-logs` (hospital auth)
+- `GET /audit/summary` (hospital auth)
+
+### Notifications
+
+- `POST /notifications/push/subscribe` (patient auth)
+- `DELETE /notifications/push/unsubscribe` (patient auth)
 
 #### Patient Token Refresh
 
