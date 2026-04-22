@@ -1,0 +1,41 @@
+## CodeRabbit Configuration
+
+# Language models to use for analysis
+language_models:
+  claude-opus: true
+
+# Code review rules and settings
+reviews:
+  # Request review on all PRs
+  request_changes_on_review: true
+  
+  # Skip review for specific file patterns
+  skip_review_for:
+    - "**/*.md"
+    - "**/*.json"
+    - "**/dist/**"
+    - "**/node_modules/**"
+    - "**/.next/**"
+
+# Auto-review settings
+auto_review:
+  enabled: true
+  # Don't auto-review PRs with too many changes
+  max_files: 150
+  max_lines: 5000
+
+# Quality gates
+quality_gates:
+  enabled: true
+
+# Chat settings
+chat:
+  enabled: true
+
+# Enabled features
+features:
+  - auto_description
+  - code_quality
+  - duplicate_code_detection
+  - security_scan
+  - performance_analysis
