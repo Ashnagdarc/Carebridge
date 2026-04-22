@@ -209,9 +209,9 @@ export function RunActionButton({
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
               transition={spring}
-              className="flex items-center gap-3 rounded-full px-6 h-12 min-h-0 select-none bg-zinc-800/80 text-white shadow-sm hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-zinc-700 transition"
+              className="flex items-center gap-2 rounded-full px-4 h-11 min-h-0 select-none bg-gradient-to-r from-zinc-900/80 to-zinc-800/70 border border-zinc-700/40 text-white shadow-sm hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-zinc-700 transition"
             >
-              <span className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-700/50">
+              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-700/40 ml-0">
                 <Play className="h-4 w-4 text-white" />
               </span>
 
