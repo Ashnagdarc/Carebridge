@@ -63,9 +63,6 @@ export default function SignupPage() {
         email: formData.email,
         password: formData.password,
       });
-
-      // Redirect on successful signup
-      router.push("/dashboard");
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An error occurred during signup";

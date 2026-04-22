@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -10,11 +10,13 @@ import { Card, CardBody } from "@/components/Card";
 import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { BottomTabs } from "@/components/BottomTabs";
 import { generateUID } from "@/lib/uid";
+import { consentApi } from "@/lib/api";
 
 function DashboardContent() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const [copied, setCopied] = useState(false);
+  const [pendingCount, setPendingCount] = useState<number | null>(null);
 
   // Generate UID from user data (consistent across renders)
   const patientUID = useMemo(() => {
@@ -36,6 +38,25 @@ function DashboardContent() {
       console.error("Failed to copy UID:", error);
     }
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPendingCount = async () => {
+      try {
+        const pending = await consentApi.getPendingRequests();
+        if (!cancelled) setPendingCount(pending.length);
+      } catch (error) {
+        console.warn("Failed to fetch pending requests:", error);
+        if (!cancelled) setPendingCount(0);
+      }
+    };
+
+    loadPendingCount();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   return (
     <div className="pb-24">
@@ -116,11 +137,17 @@ function DashboardContent() {
                 Pending Requests
               </h3>
               <span className="bg-gray-200 text-foreground text-sm font-bold px-2 py-1 rounded">
-                0
+                {pendingCount ?? "—"}
               </span>
             </div>
             <p className="text-gray-600 text-sm mb-3">
-              You have no pending consent requests at this time.
+              {pendingCount === null
+                ? "Loading pending consent requests..."
+                : pendingCount === 0
+                  ? "You have no pending consent requests at this time."
+                  : `You have ${pendingCount} pending consent request${
+                      pendingCount === 1 ? "" : "s"
+                    }.`}
             </p>
             <Button
               variant="secondary"

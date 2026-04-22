@@ -46,9 +46,9 @@ export function FormInput({
           ${
             error
               ? "border-error bg-red-50 text-error placeholder-red-300"
-              : "border-tertiary bg-secondary text-foreground placeholder-gray-500 focus:bg-white"
+              : "border-tertiary bg-secondary text-foreground placeholder-gray-500 dark:placeholder-gray-400 focus:bg-secondary"
           }
-          ${className}`}
+          ${className ?? ""}`}
         onChange={handleChange}
         aria-invalid={!!error}
         aria-describedby={
@@ -69,7 +69,7 @@ export function FormInput({
         </p>
       )}
       {helperText && !error && (
-        <p id={`${inputId}-helper`} className="mt-2 text-xs text-gray-600">
+        <p id={`${inputId}-helper`} className="mt-2 text-xs text-gray-500 dark:text-gray-400">
           {helperText}
         </p>
       )}

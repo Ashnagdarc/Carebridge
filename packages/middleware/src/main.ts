@@ -12,10 +12,15 @@ async function bootstrap() {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
 
+  // Express instance (needed for proxy settings + headers)
+  const httpInstance = app.getHttpAdapter().getInstance();
+
   // Trust proxy when running behind a load balancer / ingress (needed for HTTPS enforcement + correct client IPs)
   const trustProxy = (process.env.TRUST_PROXY || (isProduction ? 'true' : 'false')) === 'true';
   if (trustProxy) {
-    app.set('trust proxy', 1);
+    if (httpInstance && typeof httpInstance.set === 'function') {
+      httpInstance.set('trust proxy', 1);
+    }
   }
 
   // WebSockets (platform-ws)
@@ -35,7 +40,6 @@ async function bootstrap() {
   );
 
   // Disable X-Powered-By header (Express)
-  const httpInstance = app.getHttpAdapter().getInstance();
   if (httpInstance && typeof httpInstance.disable === 'function') {
     httpInstance.disable('x-powered-by');
   }

@@ -27,6 +27,7 @@ export const ToastContext = React.createContext<ToastContextType | undefined>(
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const counterRef = React.useRef(0);
 
   const removeToast = useCallback((id: string) => {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
@@ -34,7 +35,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
   const addToast = useCallback(
     (message: string, type: ToastType = "info", options?: { onClick?: () => void }) => {
-      const id = Date.now().toString();
+      const id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${counterRef.current++}`;
       const newToast: Toast = { id, message, type, onClick: options?.onClick };
 
       setToasts((prev) => [...prev, newToast]);
@@ -70,7 +74,7 @@ interface ToastContainerProps {
 
 function ToastContainer({ toasts, onRemove }: ToastContainerProps) {
   return (
-    <div className="fixed bottom-6 left-6 right-6 z-50 flex flex-col gap-2 pointer-events-none md:left-auto md:right-6 md:max-w-sm">
+    <div className="fixed bottom-[calc(env(safe-area-inset-bottom)+6rem)] left-6 right-6 z-50 flex flex-col gap-2 pointer-events-none md:left-auto md:right-6 md:bottom-6 md:max-w-sm">
       {toasts.map((toast) => (
         <ToastItem
           key={toast.id}

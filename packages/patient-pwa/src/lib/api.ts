@@ -132,6 +132,23 @@ async function readError(response: Response, fallback: string): Promise<Error> {
   }
 }
 
+function isNetworkError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  if (error instanceof TypeError) return true;
+  return false;
+}
+
+async function safeFetch(url: string, init: RequestInit, fallback: string): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch (error) {
+    if (isNetworkError(error)) {
+      throw new Error(`${fallback}: cannot reach API (${API_URL}). Is the middleware running on port 3000?`);
+    }
+    throw error;
+  }
+}
+
 function unwrapResponse<T>(payload: ApiResponse<T> | T): T {
   if (
     payload &&
@@ -167,27 +184,6 @@ function mapPatientAuthResponse(response: BackendPatientAuthResponse): PatientAu
     refreshToken: response.refreshToken || '',
     expiresIn: response.expiresIn,
     tokenType: response.tokenType,
-  };
-}
-
-function mapPatientProfileResponse(profile: BackendPatientProfile): PatientAuthResponse {
-  const accessToken = authApi.getToken();
-  const refreshToken =
-    typeof window === 'undefined'
-      ? ''
-      : localStorage.getItem('carebridge_refresh_token') || '';
-
-  return {
-    id: profile.id,
-    email: profile.email,
-    name: `${profile.firstName} ${profile.lastName}`.trim(),
-    firstName: profile.firstName,
-    lastName: profile.lastName,
-    externalId: profile.externalId,
-    accessToken,
-    refreshToken,
-    expiresIn: 0,
-    tokenType: 'Bearer',
   };
 }
 
@@ -300,7 +296,7 @@ function mapAccessLogEntry(log: BackendAuditLog): AccessLogEntry {
 export const authApi = {
   async signup(data: SignupRequest): Promise<PatientAuthResponse> {
     const { firstName, lastName } = splitFullName(data.name);
-    const response = await fetch(`${API_URL}/patients/signup`, {
+    const response = await safeFetch(`${API_URL}/patients/signup`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -311,30 +307,33 @@ export const authApi = {
         email: data.email,
         password: data.password,
       }),
-    });
+    }, 'Signup failed');
 
     if (!response.ok) {
       throw await readError(response, 'Signup failed');
     }
 
-    const result = unwrapResponse<BackendPatientProfile>(await response.json());
-    const mapped = mapPatientProfileResponse(result);
+    const result = unwrapResponse<BackendPatientAuthResponse | BackendPatientProfile>(
+      await response.json()
+    );
 
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('carebridge_user', JSON.stringify(mapped));
+    if (result && typeof result === 'object' && 'accessToken' in result) {
+      return mapPatientAuthResponse(result as BackendPatientAuthResponse);
     }
 
-    return mapped;
+    // Backend signup can return only a profile (no tokens). Ensure the frontend has tokens
+    // by performing an immediate login.
+    return this.login({ email: data.email, password: data.password });
   },
 
   async login(credentials: LoginRequest): Promise<PatientAuthResponse> {
-    const response = await fetch(`${API_URL}/patients/login`, {
+    const response = await safeFetch(`${API_URL}/patients/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(credentials),
-    });
+    }, 'Login failed');
 
     if (!response.ok) {
       throw await readError(response, 'Login failed');

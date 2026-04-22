@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ExpiryOption } from "@/types/consent";
+import { ConsentRequest, ExpiryOption } from "@/types/consent";
 import { consentApi } from "@/lib/api";
 import { useToast } from "@/providers/ToastProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
@@ -18,15 +18,47 @@ function ConsentApprovalContent() {
   const requestId = params.id as string;
 
   const [isLoading, setIsLoading] = useState(true);
+  const [request, setRequest] = useState<ConsentRequest | null>(null);
   const [selectedExpiry, setSelectedExpiry] = useState<ExpiryOption>(30);
   const [customDays, setCustomDays] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    // In a real app, we'd fetch the specific request
-    // For now, we'll just set a loading state that resolves
-    setIsLoading(false);
-  }, []);
+    let cancelled = false;
+
+    const loadRequest = async () => {
+      try {
+        setIsLoading(true);
+        const pending = await consentApi.getPendingRequests();
+        const found = pending.find((item) => item.id === requestId) || null;
+
+        if (!found) {
+          addToast("Consent request not found (it may have already been handled).", "error");
+          router.push("/consents");
+          return;
+        }
+
+        if (!cancelled) {
+          setRequest(found);
+        }
+      } catch (error) {
+        console.error("Failed to load consent request:", error);
+        addToast("Failed to load consent request details", "error");
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    if (requestId) {
+      loadRequest();
+    } else {
+      setIsLoading(false);
+    }
+
+    return () => {
+      cancelled = true;
+    };
+  }, [addToast, requestId, router]);
 
   const getExpiryLabel = (option: ExpiryOption): string => {
     if (option === 7) return "7 days";
@@ -37,10 +69,22 @@ function ConsentApprovalContent() {
 
   const handleConfirm = async () => {
     try {
-      const expiryDays =
-        selectedExpiry === "custom"
-          ? parseInt(customDays) || 30
-          : selectedExpiry;
+      let expiryDays: number;
+      if (selectedExpiry === "custom") {
+        const trimmed = customDays.trim();
+        if (!trimmed) {
+          addToast("Enter a custom expiry duration in days", "error");
+          return;
+        }
+        const parsed = Number(trimmed);
+        if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+          addToast("Custom expiry must be a whole number of days", "error");
+          return;
+        }
+        expiryDays = parsed;
+      } else {
+        expiryDays = selectedExpiry;
+      }
 
       if (expiryDays < 1 || expiryDays > 3650) {
         addToast("Expiry must be between 1 and 3650 days", "error");
@@ -72,9 +116,44 @@ function ConsentApprovalContent() {
 
   return (
     <div className="pb-24">
-      <Header title="Approve Request" subtitle="Set access duration" />
+      <Header
+        title="Approve Request"
+        subtitle={request ? `Requested by ${request.hospital.name}` : "Set access duration"}
+        backButton
+        onBack={() => router.push("/consents")}
+      />
 
       <main className="container-safe max-w-2xl mx-auto py-6">
+        {request && (
+          <Card className="mb-6">
+            <CardBody>
+              <h3 className="text-lg font-bold mb-2 text-foreground">Request details</h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-600">Hospital</span>
+                  <span className="font-semibold text-foreground">{request.hospital.name}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-gray-600">Requested</span>
+                  <span className="text-foreground">
+                    {new Date(request.requestedAt).toLocaleString()}
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-tertiary">
+                  <p className="text-gray-600 mb-1">Data requested</p>
+                  <p className="text-foreground font-semibold">
+                    {(request.scopes || []).map((scope) => scope.name).join(", ") || "Medical data"}
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-tertiary">
+                  <p className="text-gray-600 mb-1">Clinical reason</p>
+                  <p className="text-foreground">{request.clinicalReason}</p>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        )}
+
         <Card className="mb-6">
           <CardBody>
             <h3 className="text-lg font-bold mb-4 text-foreground">
@@ -153,6 +232,7 @@ function ConsentApprovalContent() {
                 variant="primary"
                 onClick={handleConfirm}
                 disabled={isSubmitting}
+                loading={isSubmitting}
                 className="flex-1"
               >
                 {isSubmitting ? "Confirming..." : "Confirm Approval"}

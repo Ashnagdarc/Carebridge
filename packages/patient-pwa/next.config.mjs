@@ -3,6 +3,8 @@ import withPWA from 'next-pwa';
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production';
 
+const connectSrc = isProd ? "connect-src 'self' https: wss:" : "connect-src 'self' http: https: ws: wss:";
+
 const cspReportOnly = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -13,10 +15,10 @@ const cspReportOnly = [
   "style-src 'self' 'unsafe-inline'",
   // Next.js uses inline scripts; keep this as report-only to avoid breaking the app.
   "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-  "connect-src 'self' https: wss:",
+  connectSrc,
   "manifest-src 'self'",
   "worker-src 'self' blob:",
-  'upgrade-insecure-requests',
+  ...(isProd ? ['upgrade-insecure-requests'] : []),
 ].join('; ');
 
 const securityHeaders = [

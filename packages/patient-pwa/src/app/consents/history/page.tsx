@@ -8,6 +8,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { BottomTabs } from "@/components/BottomTabs";
+import { HoverExpand } from "@/components/unlumen-ui/hover-expand";
 import { useToast } from "@/providers/ToastProvider";
 import { AccessLogEntry, ConsentRecord, HospitalInfo } from "@/types/consent";
 
@@ -42,8 +43,7 @@ function ConsentHistoryContent() {
   const router = useRouter();
   const { addToast } = useToast();
 
-  const [activeConsents, setActiveConsents] = useState<ConsentRecord[]>([]);
-  const [revokedConsents, setRevokedConsents] = useState<ConsentRecord[]>([]);
+  const [consents, setConsents] = useState<ConsentRecord[]>([]);
   const [accessLogs, setAccessLogs] = useState<AccessLogEntry[]>([]);
 
   const [consentsLoading, setConsentsLoading] = useState(true);
@@ -79,7 +79,7 @@ function ConsentHistoryContent() {
           consentApi.getHospitals(),
         ]);
 
-        setActiveConsents(consents);
+        setConsents(consents);
         setHospitals(hospitalsList);
         setAccessLogs(logResult.logs);
         setLogPagination({
@@ -100,12 +100,21 @@ function ConsentHistoryContent() {
     loadConsentsAndLogs();
   }, [addToast]);
 
+  const revokedConsents = useMemo(
+    () => consents.filter((consent) => consent.status === "revoked" || !!consent.revokedAt),
+    [consents]
+  );
+
   const expiredConsents = useMemo(
     () =>
-      activeConsents.filter(
-        (consent) => new Date(consent.expiresAt).getTime() <= Date.now()
-      ),
-    [activeConsents]
+      consents.filter((consent) => {
+        if (consent.status === "revoked" || consent.revokedAt) return false;
+        return (
+          consent.status === "expired" ||
+          new Date(consent.expiresAt).getTime() <= Date.now()
+        );
+      }),
+    [consents]
   );
 
   const hospitalMap = useMemo(() => {
@@ -116,13 +125,13 @@ function ConsentHistoryContent() {
   }, [hospitals]);
 
 
-  const currentActiveConsents = useMemo(
-    () =>
-      activeConsents.filter(
-        (consent) => new Date(consent.expiresAt).getTime() > Date.now()
-      ),
-    [activeConsents]
-  );
+  const currentActiveConsents = useMemo(() => {
+    return consents.filter((consent) => {
+      if (consent.status === "revoked" || consent.revokedAt) return false;
+      if (consent.status === "expired") return false;
+      return new Date(consent.expiresAt).getTime() > Date.now();
+    });
+  }, [consents]);
 
   const toggleSection = (section: ConsentSectionKey) => {
     setExpandedSections((prev) => ({
@@ -167,8 +176,9 @@ function ConsentHistoryContent() {
         revokedAt: new Date().toISOString(),
       };
 
-      setActiveConsents((prev) => prev.filter((consent) => consent.id !== confirmRevoke.id));
-      setRevokedConsents((prev) => [revokedRecord, ...prev]);
+      setConsents((prev) =>
+        prev.map((consent) => (consent.id === confirmRevoke.id ? revokedRecord : consent))
+      );
       setConfirmRevoke(null);
       addToast("Consent revoked successfully", "success");
     } catch (error) {
@@ -189,6 +199,28 @@ function ConsentHistoryContent() {
       />
 
       <main className="container-safe max-w-2xl mx-auto py-6 space-y-6">
+        {/* Active Consents with HoverExpand */}
+        {currentActiveConsents.length > 0 && !consentsLoading && (
+          <Card>
+            <CardBody>
+              <h2 className="text-lg font-bold text-foreground mb-4">Your Active Consents</h2>
+              <HoverExpand
+                items={currentActiveConsents.map((consent) => ({
+                  id: consent.id,
+                  label: hospitalMap[consent.hospitalId || ""] || "Healthcare Provider",
+                  sublabel: new Date(consent.expiresAt).toLocaleDateString(),
+                  description: `${
+                    consent.scopes?.map((scope) => scope.name).join(", ") || "Medical Data"
+                  } access`,
+                  image: `https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop&auto=format`,
+                  imageAlt: `${hospitalMap[consent.hospitalId || ""]} facility`,
+                }))}
+                collapsedHeight={60}
+                expandedHeight={280}
+              />
+            </CardBody>
+          </Card>
+        )}
         <Card>
           <CardBody>
             <h2 className="text-lg font-bold text-foreground">Consent Records</h2>
@@ -269,43 +301,30 @@ function ConsentHistoryContent() {
               <EmptyState text="No access log entries yet." />
             ) : (
               <>
-                <ul className="space-y-2" aria-label="Access log timeline">
-                  {accessLogs.map((log) => (
-                    <li key={log.id} className="border border-tertiary rounded-lg p-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <p className="text-sm font-semibold text-foreground">
-                            {humanize(log.action)}
-                          </p>
-                          <p className="text-xs text-gray-600">{parseDataAccessed(log)}</p>
-                          <p className="text-xs text-gray-600">
-                            Hospital: {hospitalMap[log.hospitalId || ""] || "Unknown"}
-                          </p>
-                          <p className="text-xs text-gray-600">{formatDateTime(log.createdAt)}</p>
-                        </div>
-                        <span
-                          className={`text-xs font-semibold px-2 py-1 rounded ${
-                            log.status.toLowerCase() === "success"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}
-                        >
-                          {log.status.toLowerCase() === "success" ? "Successful" : log.status.toLowerCase() === "failed" ? "Failed" : humanize(log.status)}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
+                <HoverExpand
+                  items={accessLogs.map((log) => ({
+                    id: log.id,
+                    label: humanize(log.action),
+                    sublabel: hospitalMap[log.hospitalId || ""] || "Unknown",
+                    description: `Status: ${log.status.toLowerCase() === "success" ? "Success" : log.status.toLowerCase() === "failed" ? "Failed" : humanize(log.status)} | ${parseDataAccessed(log)} | ${formatDateTime(log.createdAt)}`,
+                    image: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=800&h=600&fit=crop&auto=format",
+                    imageAlt: `Access log for ${humanize(log.action)}`,
+                  }))}
+                  collapsedHeight={68}
+                  expandedHeight={240}
+                />
 
                 {logPagination.hasMore && (
-                  <Button
-                    variant="secondary"
-                    className="w-full"
-                    onClick={loadMoreLogs}
-                    loading={isLoadingMoreLogs}
-                  >
-                    Load More
-                  </Button>
+                  <div className="mt-4">
+                    <Button
+                      variant="secondary"
+                      className="w-full"
+                      onClick={loadMoreLogs}
+                      loading={isLoadingMoreLogs}
+                    >
+                      Load More
+                    </Button>
+                  </div>
                 )}
               </>
             )}

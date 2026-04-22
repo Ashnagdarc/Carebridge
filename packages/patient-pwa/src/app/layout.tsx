@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
   title: "CareBridge Patient",
@@ -52,7 +53,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={cn("font-sans")}>
       <head>
         {/* PWA Meta Tags */}
         <meta name="mobile-web-app-capable" content="yes" />
@@ -64,7 +65,6 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-title" content="CareBridge" />
 
         {/* iOS Specific */}
-        <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
 
         {/* Accessibility */}
@@ -81,9 +81,9 @@ export default function RootLayout({
         <ToastProvider>
           <AuthProvider>
             <NotificationsProvider>
-              <main id="main-content" className="min-h-screen">
+              <div id="main-content" role="main" className="min-h-screen">
                 {children}
-              </main>
+              </div>
             </NotificationsProvider>
           </AuthProvider>
         </ToastProvider>

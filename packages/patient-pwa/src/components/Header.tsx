@@ -24,7 +24,7 @@ export function Header({
   action,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 bg-background border-b border-tertiary">
+    <header className="sticky top-0 z-50 bg-background border-b border-tertiary">
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-3 flex-1">
           {backButton && (
