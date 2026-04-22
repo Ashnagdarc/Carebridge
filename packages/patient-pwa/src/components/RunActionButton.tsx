@@ -209,7 +209,7 @@ export function RunActionButton({
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
               transition={spring}
-              className="flex items-center gap-2 rounded-full px-4 h-11 min-h-0 select-none bg-gradient-to-r from-zinc-900/80 to-zinc-800/70 border border-zinc-700/40 text-white shadow-sm hover:brightness-105 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-zinc-700 transition"
+              className="cb-action flex items-center gap-2 min-h-0 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-zinc-700"
             >
               <span className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-700/40 ml-0">
                 <Play className="h-4 w-4 text-white" />
@@ -230,7 +230,7 @@ export function RunActionButton({
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
               transition={spring}
-              className="flex items-center justify-between gap-3 px-3 whitespace-nowrap"
+                className="cb-action flex items-center justify-between gap-3 px-3 whitespace-nowrap"
             >
               <div className="flex items-center gap-2">
                 <AnimatePresence mode="popLayout">
@@ -280,7 +280,7 @@ export function RunActionButton({
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
               transition={spring}
-              className="flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-3 whitespace-nowrap shadow-sm"
+              className="cb-action--done flex items-center gap-2 whitespace-nowrap"
             >
               <HiBadgeCheck className="h-6 w-6 text-[#22c55e]" />
 
