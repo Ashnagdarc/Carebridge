@@ -144,8 +144,11 @@ button:active {
 /* Skip to main content link */
 .skip-to-main {
   position: absolute;
-  top: -40px;
-  left: 0;
+  top: 0;
+  left: -999px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
   background: #0a84ff;
   color: white;
   padding: 8px;
@@ -153,7 +156,10 @@ button:active {
 }
 
 .skip-to-main:focus {
-  top: 0;
+  left: 0;
+  width: auto;
+  height: auto;
+  overflow: visible;
 }
 
 /* Utility Classes */

@@ -29,5 +29,6 @@ pnpm-debug.log*
 .zap/
 
 # Playwright
+.playwright-cli/
 playwright-report/
 test-results/
