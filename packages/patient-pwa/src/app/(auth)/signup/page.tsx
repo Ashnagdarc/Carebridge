@@ -3,9 +3,10 @@
 import React, { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthPanel, AuthScreen } from "@/components/AuthScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { FormInput } from "@/components/FormInput";
-import { Button } from "@/components/Button";
+import { RunActionButton, authActionSteps } from "@/components/RunActionButton";
 import { validateSignupForm } from "@/lib/validation";
 
 export default function SignupPage() {
@@ -22,13 +23,15 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [playAnimation, setPlayAnimation] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
-  // Redirect if already authenticated
+  // Redirect if already authenticated (not part of an in-progress submit)
   useEffect(() => {
-    if (!authLoading && isAuthenticated) {
+    if (!authLoading && isAuthenticated && !submitSuccess) {
       router.push("/dashboard");
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, submitSuccess]);
 
   const handleChange = (value: string, name?: string) => {
     if (name) {
@@ -37,12 +40,14 @@ export default function SignupPage() {
       if (errors[name]) {
         setErrors((prev) => ({ ...prev, [name]: "" }));
       }
+      if (submitSuccess) setSubmitSuccess(false);
     }
   };
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setPlayAnimation(true);
     setSubmitError(null);
 
     // Validate form
@@ -63,6 +68,7 @@ export default function SignupPage() {
         email: formData.email,
         password: formData.password,
       });
+      setSubmitSuccess(true);
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "An error occurred during signup";
@@ -74,23 +80,23 @@ export default function SignupPage() {
 
   if (authLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <AuthScreen>
         <div className="text-center">
-          <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-white/70">Loading...</p>
         </div>
-      </div>
+      </AuthScreen>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-6">
-      <div className="w-full max-w-md">
+    <AuthScreen className="py-8">
+      <AuthPanel>
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-secondary rounded-2xl mb-4">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-white/10 rounded-2xl mb-4">
             <svg
-              className="w-8 h-8 text-foreground"
+              className="w-8 h-8 text-white"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -103,10 +109,10 @@ export default function SignupPage() {
               />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">
             Create Account
           </h1>
-          <p className="text-gray-600">
+          <p className="text-white/60">
             Join CareBridge to manage your healthcare data securely
           </p>
         </div>
@@ -172,21 +178,25 @@ export default function SignupPage() {
             required
           />
 
-          <Button
+          <RunActionButton
             type="submit"
-            variant="primary"
-            size="lg"
             fullWidth
-            loading={isSubmitting}
+            idleLabel="Create Account"
+            ariaLabel="Create Account"
+            steps={authActionSteps.signUp}
+            isRunning={playAnimation}
+            runningLabel="Creating account..."
             disabled={isSubmitting}
-          >
-            Create Account
-          </Button>
+            onDone={() => {
+              setPlayAnimation(false);
+              if (submitSuccess) router.push('/dashboard');
+            }}
+          />
         </form>
 
         {/* Login Link */}
         <div className="text-center">
-          <p className="text-gray-600 mb-2">Already have an account?</p>
+          <p className="text-white/60 mb-2">Already have an account?</p>
           <Link
             href="/login"
             className="text-info font-semibold hover:underline"
@@ -196,7 +206,7 @@ export default function SignupPage() {
         </div>
 
         {/* Privacy Notice */}
-        <div className="mt-8 pt-6 border-t border-tertiary text-center text-xs text-gray-600">
+        <div className="mt-8 pt-6 border-t border-tertiary text-center text-xs text-white/45">
           <p>
             By creating an account, you agree to our{" "}
             <a href="/terms" className="text-info hover:underline">
@@ -208,7 +218,7 @@ export default function SignupPage() {
             </a>
           </p>
         </div>
-      </div>
-    </div>
+      </AuthPanel>
+    </AuthScreen>
   );
 }

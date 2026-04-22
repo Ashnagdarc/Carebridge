@@ -40,6 +40,8 @@ const securityHeaders = [
 const nextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
+  // Allow dev requests from these exact origins (include scheme)
+  allowedDevOrigins: ['http://localhost:3001', 'http://127.0.0.1:3001'],
   async headers() {
     return [
       {

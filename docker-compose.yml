@@ -26,6 +26,7 @@ services:
       DATABASE_URL: postgresql://carebridge_user:carebridge_dev_password@postgres:5432/carebridge_db
       JWT_SECRET: dev_jwt_secret_key_change_in_production
       PATIENT_APP_URL: http://localhost:3001
+      CORS_ORIGIN: http://localhost:3001,http://127.0.0.1:3001
       PORT: 3000
     ports:
       - '3000:3000'
@@ -47,6 +48,7 @@ services:
       NODE_ENV: development
       NEXT_PUBLIC_API_URL: http://localhost:3000
       NEXT_PUBLIC_API_VERSION: v1
+      HOST: 0.0.0.0
     ports:
       - '3001:3001'
     depends_on:
