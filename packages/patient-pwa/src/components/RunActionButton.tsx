@@ -230,7 +230,7 @@ export function RunActionButton({
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
               transition={spring}
-              className="flex items-center justify-between gap-3 px-4 whitespace-nowrap"
+              className="flex items-center justify-between gap-3 px-3 whitespace-nowrap"
             >
               <div className="flex items-center gap-2">
                 <AnimatePresence mode="popLayout">
@@ -242,7 +242,7 @@ export function RunActionButton({
                     transition={{ type: 'spring', stiffness: 220, damping: 26 }}
                     className="flex items-center gap-3"
                   >
-                    <span className="w-8 h-8 rounded-full bg-zinc-700/40 flex items-center justify-center">
+                    <span className="w-7 h-7 rounded-full bg-zinc-700/40 flex items-center justify-center ml-0">
                       {React.createElement(steps[currentStep]?.icon ?? Play, {
                         className: 'w-4 h-4 text-white/90',
                       })}
