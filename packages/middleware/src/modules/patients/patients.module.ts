@@ -6,10 +6,12 @@ import { PatientsService } from './patients.service';
 import { PatientsController } from './patients.controller';
 import { PatientJwtStrategy } from '../auth/strategies/patient-jwt.strategy';
 import { PrismaService } from '@src/common/prisma/prisma.service';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'patient-jwt' }),
+    EmailModule,
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'dev_jwt_secret_key',
       signOptions: { expiresIn: (process.env.JWT_EXPIRATION || '86400') as any },

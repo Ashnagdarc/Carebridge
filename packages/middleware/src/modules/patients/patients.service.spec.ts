@@ -4,6 +4,7 @@ import { PrismaService } from '@src/common/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
+import { EmailService } from '../email/email.service';
 
 jest.mock('bcryptjs');
 
@@ -11,6 +12,7 @@ describe('PatientsService', () => {
   let service: PatientsService;
   let prismaService: any;
   let jwtService: jest.Mocked<JwtService>;
+  let emailService: jest.Mocked<EmailService>;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -32,6 +34,12 @@ describe('PatientsService', () => {
               updateMany: jest.fn(),
               update: jest.fn(),
             },
+            passwordResetToken: {
+              create: jest.fn(),
+              findUnique: jest.fn(),
+              updateMany: jest.fn(),
+              update: jest.fn(),
+            },
           },
         },
         {
@@ -41,12 +49,19 @@ describe('PatientsService', () => {
             verify: jest.fn(),
           },
         },
+        {
+          provide: EmailService,
+          useValue: {
+            sendPasswordResetEmail: jest.fn(),
+          },
+        },
       ],
     }).compile();
 
     service = module.get<PatientsService>(PatientsService);
     prismaService = module.get(PrismaService) as any;
     jwtService = module.get(JwtService) as jest.Mocked<JwtService>;
+    emailService = module.get(EmailService) as jest.Mocked<EmailService>;
   });
 
   afterEach(() => {
@@ -92,6 +107,47 @@ describe('PatientsService', () => {
       expect(result.patient.email).toBe(signupDto.email);
       expect(prismaService.patient.create).toHaveBeenCalled();
       expect(prismaService.session.create).toHaveBeenCalled();
+    });
+
+    it('should normalize signup email before lookup and create', async () => {
+      const signupDto = {
+        email: ' Patient@Example.COM ',
+        password: 'SecurePassword123',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      const hashedPassword = 'hashed_password_here';
+      (bcrypt.hash as jest.Mock).mockResolvedValue(hashedPassword);
+      prismaService.patient.findUnique.mockResolvedValue(null);
+      prismaService.patient.create.mockResolvedValue({
+        id: 'pat_uuid_1',
+        externalId: 'PAT-ABC123DEF456',
+        email: 'patient@example.com',
+        passwordHash: hashedPassword,
+        firstName: signupDto.firstName,
+        lastName: signupDto.lastName,
+        dateOfBirth: null,
+        phoneNumber: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      } as any);
+      jwtService.sign.mockReturnValueOnce('access_token_jwt');
+      jwtService.sign.mockReturnValueOnce('refresh_token_jwt');
+      prismaService.session.create.mockResolvedValue({} as any);
+
+      await service.signup(signupDto);
+
+      expect(prismaService.patient.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { email: 'patient@example.com' },
+        }),
+      );
+      expect(prismaService.patient.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ email: 'patient@example.com' }),
+        }),
+      );
     });
 
     it('should reject duplicate email', async () => {
@@ -148,6 +204,34 @@ describe('PatientsService', () => {
       expect(result.accessToken).toBe('access_token_jwt');
       expect(result.patient.email).toBe(loginDto.email);
       expect(prismaService.session.create).toHaveBeenCalled();
+    });
+
+    it('should normalize login email before lookup', async () => {
+      const loginDto = {
+        email: ' Patient@Example.COM ',
+        password: 'SecurePassword123',
+      };
+
+      const patient = {
+        id: 'pat_uuid_1',
+        externalId: 'PAT-ABC123DEF456',
+        email: 'patient@example.com',
+        passwordHash: 'hashed_password_here',
+        firstName: 'John',
+        lastName: 'Doe',
+      };
+
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      prismaService.patient.findUnique.mockResolvedValue(patient as any);
+      jwtService.sign.mockReturnValueOnce('access_token_jwt');
+      jwtService.sign.mockReturnValueOnce('refresh_token_jwt');
+      prismaService.session.create.mockResolvedValue({} as any);
+
+      await service.login(loginDto);
+
+      expect(prismaService.patient.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { email: 'patient@example.com' } }),
+      );
     });
 
     it('should reject invalid email', async () => {
@@ -284,6 +368,104 @@ describe('PatientsService', () => {
           newPassword: 'NewPassword123',
         }),
       ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('requestPasswordReset', () => {
+    it('should create a token and send a reset email for an existing patient', async () => {
+      prismaService.patient.findUnique.mockResolvedValue({
+        id: 'pat_uuid_1',
+        email: 'patient@example.com',
+        firstName: 'Amina',
+      } as any);
+      prismaService.passwordResetToken.updateMany.mockResolvedValue({ count: 0 } as any);
+      prismaService.passwordResetToken.create.mockResolvedValue({} as any);
+      emailService.sendPasswordResetEmail.mockResolvedValue(undefined);
+
+      await service.requestPasswordReset({ email: 'PATIENT@example.com ' });
+
+      expect(prismaService.passwordResetToken.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            patientId: 'pat_uuid_1',
+            usedAt: null,
+          }),
+          data: { usedAt: expect.any(Date) },
+        }),
+      );
+      expect(prismaService.passwordResetToken.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          patientId: 'pat_uuid_1',
+          tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/),
+          expiresAt: expect.any(Date),
+        }),
+      });
+      expect(emailService.sendPasswordResetEmail).toHaveBeenCalledWith(
+        'patient@example.com',
+        expect.stringMatching(/^http:\/\/localhost:3001\/reset-password\?token=/),
+        'Amina',
+      );
+    });
+
+    it('should not reveal unknown email addresses', async () => {
+      prismaService.patient.findUnique.mockResolvedValue(null);
+
+      await service.requestPasswordReset({ email: 'missing@example.com' });
+
+      expect(prismaService.passwordResetToken.create).not.toHaveBeenCalled();
+      expect(emailService.sendPasswordResetEmail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmPasswordReset', () => {
+    it('should reset password, mark token used, and revoke sessions', async () => {
+      const expiresAt = new Date(Date.now() + 100000);
+      prismaService.passwordResetToken.findUnique.mockResolvedValue({
+        id: 'reset_1',
+        patientId: 'pat_uuid_1',
+        tokenHash: 'hash',
+        expiresAt,
+        usedAt: null,
+      } as any);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('new_hash');
+      prismaService.patient.update.mockResolvedValue({} as any);
+      prismaService.passwordResetToken.update.mockResolvedValue({} as any);
+      prismaService.session.updateMany.mockResolvedValue({ count: 2 } as any);
+
+      await service.confirmPasswordReset({
+        token: 'plain-token',
+        newPassword: 'NewPassword123',
+      });
+
+      expect(prismaService.patient.update).toHaveBeenCalledWith({
+        where: { id: 'pat_uuid_1' },
+        data: { passwordHash: 'new_hash' },
+      });
+      expect(prismaService.passwordResetToken.update).toHaveBeenCalledWith({
+        where: { id: 'reset_1' },
+        data: { usedAt: expect.any(Date) },
+      });
+      expect(prismaService.session.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { patientId: 'pat_uuid_1', revokedAt: null },
+        }),
+      );
+    });
+
+    it('should reject expired reset tokens', async () => {
+      prismaService.passwordResetToken.findUnique.mockResolvedValue({
+        id: 'reset_1',
+        patientId: 'pat_uuid_1',
+        expiresAt: new Date(Date.now() - 1000),
+        usedAt: null,
+      } as any);
+
+      await expect(
+        service.confirmPasswordReset({
+          token: 'plain-token',
+          newPassword: 'NewPassword123',
+        }),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 
@@ -438,8 +620,9 @@ describe('PatientsService', () => {
       const result = await service.refresh({ refreshToken });
 
       expect(result.accessToken).toBe('new_access_token');
-      expect(result.refreshToken).toBe('new_refresh_token');
-      expect(prismaService.session.update).toHaveBeenCalled();
+      expect(result.refreshToken).toBe('new_refresh_token');      expect(prismaService.session.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { refreshToken } }),
+      );      expect(prismaService.session.update).toHaveBeenCalled();
     });
 
     it('should reject invalid refresh token', async () => {

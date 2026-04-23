@@ -11,13 +11,14 @@ import { BottomTabs } from "@/components/BottomTabs";
 import { HoverExpand } from "@/components/unlumen-ui/hover-expand";
 import { useToast } from "@/providers/ToastProvider";
 import { AccessLogEntry, ConsentRecord, HospitalInfo } from "@/types/consent";
+import { triggerHaptic } from "@/lib/haptics";
 
 type ConsentSectionKey = "active" | "expired" | "revoked";
 
 const ACCESS_LOG_PAGE_SIZE = 20;
 
 function formatDateTime(value?: string) {
-  if (!value) return "Unknown";
+  if (!value) return "Until revoked";
   return new Date(value).toLocaleString();
 }
 
@@ -109,10 +110,8 @@ function ConsentHistoryContent() {
     () =>
       consents.filter((consent) => {
         if (consent.status === "revoked" || consent.revokedAt) return false;
-        return (
-          consent.status === "expired" ||
-          new Date(consent.expiresAt).getTime() <= Date.now()
-        );
+        if (!consent.expiresAt) return false;
+        return consent.status === "expired" || new Date(consent.expiresAt).getTime() <= Date.now();
       }),
     [consents]
   );
@@ -129,6 +128,7 @@ function ConsentHistoryContent() {
     return consents.filter((consent) => {
       if (consent.status === "revoked" || consent.revokedAt) return false;
       if (consent.status === "expired") return false;
+      if (!consent.expiresAt) return true;
       return new Date(consent.expiresAt).getTime() > Date.now();
     });
   }, [consents]);
@@ -179,6 +179,7 @@ function ConsentHistoryContent() {
       setConsents((prev) =>
         prev.map((consent) => (consent.id === confirmRevoke.id ? revokedRecord : consent))
       );
+      triggerHaptic([12, 32, 12]);
       setConfirmRevoke(null);
       addToast("Consent revoked successfully", "success");
     } catch (error) {
@@ -208,7 +209,9 @@ function ConsentHistoryContent() {
                 items={currentActiveConsents.map((consent) => ({
                   id: consent.id,
                   label: hospitalMap[consent.hospitalId || ""] || "Healthcare Provider",
-                  sublabel: new Date(consent.expiresAt).toLocaleDateString(),
+                  sublabel: consent.expiresAt
+                    ? new Date(consent.expiresAt).toLocaleDateString()
+                    : "Until revoked",
                   description: `${
                     consent.scopes?.map((scope) => scope.name).join(", ") || "Medical Data"
                   } access`,
@@ -229,7 +232,7 @@ function ConsentHistoryContent() {
             </p>
 
             {consentsLoading ? (
-              <p className="text-sm text-gray-600">Loading consent records...</p>
+              <p className="text-sm text-muted-foreground">Loading consent records…</p>
             ) : (
               <div className="space-y-3">
                 <ConsentSection
@@ -296,7 +299,7 @@ function ConsentHistoryContent() {
             </div>
 
             {logsLoading ? (
-              <p className="text-sm text-gray-600">Loading access logs...</p>
+              <p className="text-sm text-muted-foreground">Loading access logs…</p>
             ) : accessLogs.length === 0 ? (
               <EmptyState text="No access log entries yet." />
             ) : (
@@ -334,8 +337,13 @@ function ConsentHistoryContent() {
 
       {confirmRevoke && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-background border border-tertiary rounded-lg max-w-md w-full p-5 space-y-4">
-            <h3 className="text-lg font-bold text-foreground">Confirm Revocation</h3>
+          <div
+            className="w-full max-w-md space-y-4 rounded-lg border border-tertiary bg-background p-5"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="confirm-revoke-title"
+          >
+            <h3 id="confirm-revoke-title" className="text-lg font-bold text-foreground">Confirm Revocation</h3>
             <p className="text-sm text-gray-700">
               Revoke access for {confirmRevoke.hospital.name}? The hospital will no longer be
               able to access the approved data.
@@ -387,6 +395,7 @@ function ConsentSection({
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={expanded}
         className="w-full flex items-center justify-between px-3 py-2 text-left"
       >
         <span className="text-sm font-semibold text-foreground">

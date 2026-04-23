@@ -140,6 +140,39 @@ describe('ConsentService', () => {
       expect(prismaService.consentRecord.create).toHaveBeenCalled();
     });
 
+    it('should approve a consent request until revoked', async () => {
+      const consentRequest = {
+        id: 'cr_1',
+        patientId: 'pat_1',
+        requestingHospitalId: 'hosp_1',
+        dataType: 'allergies',
+        status: 'pending',
+        approvalCode: 'ABC123XY',
+        expiresAt: new Date(Date.now() + 1000000),
+        requestingHospital: { id: 'hosp_1', name: 'Hospital A', code: 'HOSPITAL_A' },
+        approvedAt: null,
+      };
+
+      const updated = { ...consentRequest, status: 'approved', approvedAt: new Date() };
+
+      prismaService.consentRequest.findUnique.mockResolvedValue(consentRequest as any);
+      prismaService.consentRequest.update.mockResolvedValue(updated as any);
+      prismaService.consentRecord.create.mockResolvedValue({} as any);
+
+      const result = await service.approveConsentRequest('cr_1', {
+        approvalCode: 'ABC123XY',
+        indefinite: true,
+      });
+
+      expect(result.status).toBe('approved');
+      expect(prismaService.consentRecord.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          consentRequestId: 'cr_1',
+          expiresAt: null,
+        }),
+      });
+    });
+
     it('should reject invalid approval code', async () => {
       const consentRequest = {
         id: 'cr_1',
@@ -267,6 +300,16 @@ describe('ConsentService', () => {
 
       expect(result.total).toBe(1);
       expect(result.consents.length).toBe(1);
+      expect(prismaService.consentRecord.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: expect.any(Date) } },
+            ],
+          }),
+        }),
+      );
     });
   });
 
@@ -281,6 +324,16 @@ describe('ConsentService', () => {
       const result = await service.hasActiveConsent('pat_1', 'hosp_1', 'allergies');
 
       expect(result).toBe(true);
+      expect(prismaService.consentRecord.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            OR: [
+              { expiresAt: null },
+              { expiresAt: { gt: expect.any(Date) } },
+            ],
+          }),
+        }),
+      );
     });
 
     it('should return true if a multi-scope consent covers the requested data type', async () => {

@@ -2,7 +2,6 @@
 
 import React, { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { AuthPanel, AuthScreen } from "@/components/AuthScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { FormInput } from "@/components/FormInput";
@@ -59,6 +58,7 @@ export default function SignupPage() {
       );
       setErrors(errorMap);
       setIsSubmitting(false);
+      setPlayAnimation(false);
       return;
     }
 
@@ -83,7 +83,7 @@ export default function SignupPage() {
       <AuthScreen>
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/70">Loading...</p>
+          <p className="text-white/70">Loading…</p>
         </div>
       </AuthScreen>
     );
@@ -185,7 +185,6 @@ export default function SignupPage() {
             ariaLabel="Create Account"
             steps={authActionSteps.signUp}
             isRunning={playAnimation}
-            runningLabel="Creating account..."
             disabled={isSubmitting}
             onDone={() => {
               setPlayAnimation(false);
@@ -197,12 +196,12 @@ export default function SignupPage() {
         {/* Login Link */}
         <div className="text-center">
           <p className="text-white/60 mb-2">Already have an account?</p>
-          <Link
+          <a
             href="/login"
             className="text-info font-semibold hover:underline"
           >
             Sign in instead
-          </Link>
+          </a>
         </div>
 
         {/* Privacy Notice */}

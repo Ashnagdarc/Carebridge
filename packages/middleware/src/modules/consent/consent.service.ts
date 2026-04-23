@@ -144,9 +144,11 @@ export class ConsentService {
       throw new BadRequestException('Consent request has expired');
     }
 
-    const consentExpiresAt = dto.expiryDays
-      ? new Date(Date.now() + dto.expiryDays * 24 * 60 * 60 * 1000)
-      : consentRequest.expiresAt;
+    const consentExpiresAt = dto.indefinite
+      ? null
+      : dto.expiryDays
+        ? new Date(Date.now() + dto.expiryDays * 24 * 60 * 60 * 1000)
+        : consentRequest.expiresAt;
 
     // Update consent request status
     const updated = await this.prisma.consentRequest.update({
@@ -315,9 +317,10 @@ export class ConsentService {
       where: {
         patientId,
         revokedAt: null,
-        expiresAt: {
-          gt: new Date(), // Only return non-expired consents
-        },
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -346,9 +349,10 @@ export class ConsentService {
         patientId,
         requestingHospitalId: hospitalId,
         revokedAt: null,
-        expiresAt: {
-          gt: new Date(),
-        },
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
       },
     });
 
@@ -414,9 +418,10 @@ export class ConsentService {
         patientId,
         requestingHospitalId: hospitalId,
         revokedAt: null,
-        expiresAt: {
-          gt: new Date(),
-        },
+        OR: [
+          { expiresAt: null },
+          { expiresAt: { gt: new Date() } },
+        ],
       },
     });
 

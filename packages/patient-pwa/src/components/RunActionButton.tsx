@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, type Transition } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion, type Transition } from 'motion/react';
 import { Play } from 'lucide-react';
 import { HiBadgeCheck } from 'react-icons/hi';
 import { IoCloseSharp } from 'react-icons/io5';
@@ -19,10 +19,15 @@ function AnimatedText({
   className?: string;
   delayStep?: number;
 }) {
+  const reduceMotion = useReducedMotion();
   const chars = text.split('');
 
+  if (reduceMotion) {
+    return <span className={className}>{text}</span>;
+  }
+
   return (
-    <span className={className} style={{ display: 'inline-flex' }}>
+    <span aria-hidden="true" className={className} style={{ display: 'inline-flex' }}>
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
           key={text}
@@ -89,7 +94,7 @@ const DEFAULT_STEPS = [
 type StepItem = {
   id: number;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 };
 
 type RunActionButtonProps = {
@@ -133,6 +138,7 @@ export function RunActionButton({
   onClick,
   onDone,
 }: RunActionButtonProps) {
+  const reduceMotion = useReducedMotion();
   const [internalStatus, setInternalStatus] = useState<'idle' | 'running' | 'done'>('idle');
   const [currentStep, setCurrentStep] = useState(0);
 
@@ -190,29 +196,40 @@ export function RunActionButton({
     running: 360,
     done: 200,
   };
+  const animatedWidth = fullWidth ? '100%' : widths[status];
+  const currentLabel = runningLabel ?? steps[currentStep]?.label ?? idleLabel;
 
   return (
-    <div className="flex items-center justify-center">
+    <div className={`flex items-center justify-center ${fullWidth ? 'w-full' : ''} ${className ?? ''}`}>
       <motion.div
-        initial={{ width: 180 }}
-        animate={{ width: widths[status] }}
-        transition={spring}
-        className={`relative flex items-center justify-between overflow-hidden rounded-full transition-all ${status === 'running' ? 'ring-1 ring-white/10' : ''}`}
+        initial={reduceMotion ? false : { width: fullWidth ? '100%' : 180 }}
+        animate={{ width: animatedWidth }}
+        transition={reduceMotion ? { duration: 0 } : spring}
+        className={`relative flex max-w-full items-center justify-between overflow-hidden rounded-full transition-[box-shadow] ${status === 'running' ? 'ring-1 ring-white/10' : ''}`}
       >
         <AnimatePresence mode="popLayout" initial={false}>
           {status === 'idle' && (
             <motion.button
               key="idle"
               data-testid="run-action-idle"
-              onClick={startAction}
-              initial={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+              type={type}
+              form={form}
+              name={name}
+              value={value}
+              disabled={disabled}
+              aria-label={ariaLabel ?? idleLabel}
+              onClick={(event) => {
+                startAction();
+                onClick?.(event);
+              }}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
-              transition={spring}
-              className="cb-action flex items-center gap-2 min-h-0 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-zinc-700"
+              exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98, filter: 'blur(4px)' }}
+              transition={reduceMotion ? { duration: 0 } : spring}
+              className="cb-action flex min-h-11 w-full min-w-0 items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
-              <span className="flex items-center justify-center w-7 h-7 rounded-full bg-zinc-700/40 ml-0">
-                <Play className="h-4 w-4 text-white" />
+              <span className="ml-0 flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-700/40">
+                <Play aria-hidden="true" className="size-4 text-white" />
               </span>
 
               <AnimatedText
@@ -226,31 +243,35 @@ export function RunActionButton({
             <motion.div
               data-testid="run-action-running"
               key="running"
-              initial={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
+              role="status"
+              aria-live="polite"
+              aria-label={currentLabel}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
-              transition={spring}
-                className="cb-action flex items-center justify-between gap-3 px-3 whitespace-nowrap"
+              exit={reduceMotion ? undefined : { opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
+              transition={reduceMotion ? { duration: 0 } : spring}
+              className="cb-action flex w-full min-w-0 items-center justify-between gap-3 whitespace-nowrap px-3"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex min-w-0 items-center gap-2">
                 <AnimatePresence mode="popLayout">
                   <motion.div
                     key={currentStep}
-                    initial={{ opacity: 0, x: -6 }}
+                    initial={reduceMotion ? false : { opacity: 0, x: -6 }}
                     animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 6 }}
-                    transition={{ type: 'spring', stiffness: 220, damping: 26 }}
-                    className="flex items-center gap-3"
+                    exit={reduceMotion ? undefined : { opacity: 0, x: 6 }}
+                    transition={reduceMotion ? { duration: 0 } : { type: 'spring', stiffness: 220, damping: 26 }}
+                    className="flex min-w-0 items-center gap-3"
                   >
-                    <span className="w-7 h-7 rounded-full bg-zinc-700/40 flex items-center justify-center ml-0">
+                    <span className="ml-0 flex size-7 shrink-0 items-center justify-center rounded-full bg-zinc-700/40">
                       {React.createElement(steps[currentStep]?.icon ?? Play, {
-                        className: 'w-4 h-4 text-white/90',
+                        'aria-hidden': true,
+                        className: 'size-4 text-white/90',
                       })}
                     </span>
-                    <span data-testid="run-action-running-label" className="flex items-center">
+                    <span data-testid="run-action-running-label" className="flex min-w-0 items-center">
                       <AnimatedText
-                        text={runningLabel ?? steps[currentStep]?.label ?? idleLabel}
-                        className="text-[15px] font-semibold text-white/90"
+                        text={currentLabel}
+                        className="truncate text-[15px] font-semibold text-white/90"
                       />
                     </span>
                   </motion.div>
@@ -258,15 +279,16 @@ export function RunActionButton({
               </div>
 
               <motion.button
+                type="button"
                 onClick={reset}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={reduceMotion ? false : { opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ ...spring, delay: 0.15 }}
-                className="ml-2 rounded-full bg-zinc-700/60 p-1.5 flex items-center justify-center"
-                aria-label="cancel"
+                exit={reduceMotion ? undefined : { opacity: 0, scale: 0.9 }}
+                transition={reduceMotion ? { duration: 0 } : { ...spring, delay: 0.15 }}
+                className="ml-2 flex size-8 shrink-0 items-center justify-center rounded-full bg-zinc-700/60 transition-colors hover:bg-zinc-600/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
+                aria-label="Cancel action"
               >
-                <IoCloseSharp className="h-4 w-4 text-white/90" />
+                <IoCloseSharp aria-hidden="true" className="size-4 text-white/90" />
               </motion.button>
             </motion.div>
           )}
@@ -275,14 +297,16 @@ export function RunActionButton({
             <motion.button
               key="done"
               data-testid="run-action-done"
+              type="button"
+              aria-label={doneLabel}
               onClick={reset}
-              initial={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
+              initial={reduceMotion ? false : { opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
               animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-              exit={{ opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
-              transition={spring}
-              className="cb-action--done flex items-center gap-2 whitespace-nowrap"
+              exit={reduceMotion ? undefined : { opacity: 0, scale: 0.8, filter: 'blur(4px)' }}
+              transition={reduceMotion ? { duration: 0 } : spring}
+              className="cb-action--done flex min-h-11 w-full items-center justify-center gap-2 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-info"
             >
-              <HiBadgeCheck className="h-6 w-6 text-[#22c55e]" />
+              <HiBadgeCheck aria-hidden="true" className="size-6 text-white" />
 
               <AnimatedText
                   text={doneLabel}

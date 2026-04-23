@@ -155,6 +155,37 @@ describe("Consent API", () => {
       );
     });
 
+    it("approves consent request until revoked", async () => {
+      const mockResponse = {
+        id: "req-1",
+        patientId: "patient-1",
+        requestingHospitalId: "hospital-1",
+        requestingHospital: { id: "hospital-1", name: "Hospital A" },
+        dataType: "allergies",
+        description: "Ongoing care",
+        status: "approved",
+        createdAt: "2026-04-20T00:00:00Z",
+        expiresAt: null,
+      };
+
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockResponse,
+      });
+
+      localStorage.setItem("carebridge_access_token", "test-token");
+      const result = await consentApi.approveConsentRequest("req-1", "indefinite");
+
+      expect(result.id).toBe("req-1");
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/consent/requests/req-1/approve"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify({ indefinite: true }),
+        })
+      );
+    });
+
     it("throws error if approval fails", async () => {
       (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,

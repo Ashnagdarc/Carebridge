@@ -38,7 +38,7 @@ export interface ConsentRecord {
   scopes: ConsentScope[];
   consentRequestId?: string;
   approvedAt: string; // ISO date
-  expiresAt: string; // ISO date
+  expiresAt?: string; // ISO date; omitted for indefinite consent
   status: "active" | "revoked" | "expired";
   accessCount?: number;
   lastAccessedAt?: string;
@@ -56,4 +56,4 @@ export interface AccessLogEntry {
   createdAt: string;
 }
 
-export type ExpiryOption = 7 | 30 | 365 | "custom";
+export type ExpiryOption = 7 | 30 | 365 | "custom" | "indefinite";

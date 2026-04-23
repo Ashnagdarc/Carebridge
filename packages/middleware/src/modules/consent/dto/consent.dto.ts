@@ -1,4 +1,4 @@
-import { IsInt, IsOptional, IsString, IsDateString, Max, Min } from 'class-validator';
+import { IsBoolean, IsInt, IsOptional, IsString, IsDateString, Max, Min } from 'class-validator';
 
 export class CreateConsentRequestDto {
   @IsString()
@@ -29,6 +29,10 @@ export class ApproveConsentRequestDto {
   @Min(1)
   @Max(3650)
   expiryDays?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  indefinite?: boolean;
 }
 
 export class DenyConsentRequestDto {
@@ -50,7 +54,7 @@ export class ConsentRequestResponseDto {
   dataType: string;
   description: string;
   status: string; // pending, approved, denied, revoked
-  expiresAt: Date;
+  expiresAt: Date | null;
   createdAt: Date;
   requestingHospital?: {
     id: string;
@@ -69,7 +73,7 @@ export class ConsentRecordResponseDto {
   accessCount: number;
   lastAccessedAt: Date;
   revokedAt: Date;
-  expiresAt: Date;
+  expiresAt: Date | null;
   createdAt: Date;
 }
 

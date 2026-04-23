@@ -116,8 +116,16 @@ describe("Consent Inbox Page", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Deny" }));
 
+    expect(screen.getByRole("dialog", { name: "Deny request?" })).toBeInTheDocument();
+    expect(consentApi.denyConsentRequest).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm Deny" }));
+
     await waitFor(() => {
-      expect(consentApi.denyConsentRequest).toHaveBeenCalledWith("req-1");
+      expect(consentApi.denyConsentRequest).toHaveBeenCalledWith(
+        "req-1",
+        "Patient denied this consent request from the PWA"
+      );
     });
   });
 });

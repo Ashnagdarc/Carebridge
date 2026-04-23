@@ -1,21 +1,26 @@
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { createHash, randomBytes } from 'crypto';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import {
   ChangePatientPasswordDto,
+  ConfirmPatientPasswordResetDto,
   PatientAuthResponseDto,
   PatientLoginDto,
   PatientRefreshDto,
   PatientSignupDto,
+  RequestPatientPasswordResetDto,
   UpdatePatientProfileDto,
 } from '@modules/auth/dto/patient-auth.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class PatientsService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private emailService: EmailService,
   ) {}
 
   async signup(dto: PatientSignupDto): Promise<PatientAuthResponseDto> {
@@ -24,9 +29,11 @@ export class PatientsService {
       throw new BadRequestException('Missing required fields: email, password, firstName, lastName');
     }
 
+    const email = dto.email.trim().toLowerCase();
+
     // Check if email already exists
     const existingPatient = await this.prisma.patient.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (existingPatient) {
@@ -43,7 +50,7 @@ export class PatientsService {
     const patient = await this.prisma.patient.create({
       data: {
         externalId,
-        email: dto.email,
+        email,
         passwordHash,
         firstName: dto.firstName,
         lastName: dto.lastName,
@@ -90,9 +97,11 @@ export class PatientsService {
       throw new BadRequestException('email and password are required');
     }
 
+    const email = dto.email.trim().toLowerCase();
+
     // Find patient by email
     const patient = await this.prisma.patient.findUnique({
-      where: { email: dto.email },
+      where: { email },
     });
 
     if (!patient) {
@@ -150,16 +159,12 @@ export class PatientsService {
 
       // Find session
       const session = await this.prisma.session.findUnique({
-        where: { token: dto.refreshToken },
+        where: { refreshToken: dto.refreshToken },
         include: { patient: true },
       });
 
       if (!session || session.revokedAt) {
         throw new UnauthorizedException('Invalid refresh token');
-      }
-
-      if (new Date() > session.expiresAt) {
-        throw new UnauthorizedException('Refresh token expired');
       }
 
       // Generate new tokens
@@ -311,6 +316,87 @@ export class PatientsService {
     await this.logoutAll(patientId);
   }
 
+  async requestPasswordReset(dto: RequestPatientPasswordResetDto): Promise<void> {
+    if (!dto.email) {
+      throw new BadRequestException('email is required');
+    }
+
+    const email = dto.email.trim().toLowerCase();
+    const patient = await this.prisma.patient.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+      },
+    });
+
+    if (!patient) {
+      return;
+    }
+
+    await this.prisma.passwordResetToken.updateMany({
+      where: {
+        patientId: patient.id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+
+    const token = randomBytes(32).toString('base64url');
+    const tokenHash = this.hashResetToken(token);
+    const expiresAt = new Date(Date.now() + this.passwordResetTtlMs());
+
+    await this.prisma.passwordResetToken.create({
+      data: {
+        patientId: patient.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+
+    const appUrl = (process.env.APP_PUBLIC_URL || 'http://localhost:3001').replace(/\/$/, '');
+    const resetUrl = `${appUrl}/reset-password?token=${encodeURIComponent(token)}`;
+
+    await this.emailService.sendPasswordResetEmail(patient.email, resetUrl, patient.firstName);
+  }
+
+  async confirmPasswordReset(dto: ConfirmPatientPasswordResetDto): Promise<void> {
+    if (!dto.token || !dto.newPassword) {
+      throw new BadRequestException('token and newPassword are required');
+    }
+
+    const tokenHash = this.hashResetToken(dto.token);
+    const resetToken = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash },
+    });
+
+    if (
+      !resetToken ||
+      resetToken.usedAt ||
+      resetToken.expiresAt.getTime() <= Date.now()
+    ) {
+      throw new BadRequestException('Password reset link is invalid or expired');
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.patient.update({
+      where: { id: resetToken.patientId },
+      data: { passwordHash },
+    });
+
+    await this.prisma.passwordResetToken.update({
+      where: { id: resetToken.id },
+      data: { usedAt: new Date() },
+    });
+
+    await this.logoutAll(resetToken.patientId);
+  }
+
   async logoutAll(patientId: string): Promise<void> {
     await this.prisma.session.updateMany({
       where: {
@@ -432,5 +518,15 @@ export class PatientsService {
       uid += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return `PAT-${uid}`;
+  }
+
+  private hashResetToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private passwordResetTtlMs(): number {
+    const minutes = Number(process.env.PASSWORD_RESET_TTL_MINUTES || '30');
+    const safeMinutes = Number.isFinite(minutes) && minutes > 0 ? minutes : 30;
+    return safeMinutes * 60 * 1000;
   }
 }

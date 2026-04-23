@@ -18,23 +18,23 @@ export function BottomTabs() {
       {
         label: "Home",
         href: "/dashboard",
-        icon: <HomeIcon className="w-6 h-6" />,
+        icon: <HomeIcon className="size-6" />,
       },
       {
         label: "Inbox",
         href: "/consents",
-        icon: <BellIcon className="w-6 h-6" />,
+        icon: <BellIcon className="size-6" />,
         badge: unreadConsentRequests,
       },
       {
         label: "History",
         href: "/consents/history",
-        icon: <ClockIcon className="w-6 h-6" />,
+        icon: <ClockIcon className="size-6" />,
       },
       {
         label: "Settings",
         href: "/settings",
-        icon: <Cog6ToothIcon className="w-6 h-6" />,
+        icon: <Cog6ToothIcon className="size-6" />,
       },
     ],
     [unreadConsentRequests],
@@ -42,4 +42,3 @@ export function BottomTabs() {
 
   return <TabNavigation items={items} />;
 }
-

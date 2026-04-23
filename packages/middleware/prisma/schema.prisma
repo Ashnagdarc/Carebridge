@@ -30,6 +30,7 @@ model Patient {
   consentRecords    ConsentRecord[]
   auditLogs         AuditLog[]
   sessions          Session[]
+  passwordResetTokens PasswordResetToken[]
   dataRequests      DataRequest[]
   pushSubscriptions PushSubscription[]
 
@@ -158,6 +159,20 @@ model Session {
 
   @@index([patientId])
   @@index([token])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  patientId String
+  patient   Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([patientId])
+  @@index([tokenHash])
   @@index([expiresAt])
 }
 

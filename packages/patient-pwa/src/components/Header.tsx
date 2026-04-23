@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 
 interface HeaderProps {
   title: string;
@@ -24,17 +25,19 @@ export function Header({
   action,
 }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-50 bg-background border-b border-tertiary">
-      <div className="flex items-center justify-between px-4 py-3">
-        <div className="flex items-center gap-3 flex-1">
+    <header className="sticky top-0 z-50 px-3 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+      <div className="mx-auto flex min-h-[76px] max-w-2xl items-center justify-between gap-3 rounded-[1.4rem] border border-white/10 bg-background/78 px-4 py-3 shadow-[0_16px_45px_rgba(0,0,0,0.16)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/62">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           {backButton && (
             <button
+              type="button"
               onClick={onBack}
-              className="p-2 -ml-2 hover:bg-secondary rounded-lg transition-colors"
+              className="-ml-1 flex size-11 shrink-0 items-center justify-center rounded-full border border-tertiary/70 bg-secondary/70 text-foreground shadow-sm transition-[background-color,transform] hover:bg-tertiary active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info"
               aria-label="Go back"
             >
               <svg
-                className="w-6 h-6"
+                aria-hidden="true"
+                className="size-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -48,14 +51,18 @@ export function Header({
               </svg>
             </button>
           )}
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-foreground">{title}</h1>
+          <div className="min-w-0 flex-1">
+            <h1 className="truncate text-[1.65rem] font-bold leading-tight text-foreground text-balance sm:text-3xl">{title}</h1>
             {subtitle && (
-              <p className="text-sm text-gray-600 mt-1">{subtitle}</p>
+              <p className="mt-1 truncate text-sm text-muted-foreground">{subtitle}</p>
             )}
           </div>
         </div>
-        {action && <div className="ml-4">{action}</div>}
+        {action && (
+          <div className={cn("flex shrink-0 items-center gap-1.5 rounded-full border border-tertiary/70 bg-secondary/55 p-1 shadow-sm")}>
+            {action}
+          </div>
+        )}
       </div>
     </header>
   );

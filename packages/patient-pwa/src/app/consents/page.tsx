@@ -12,6 +12,7 @@ import { Card, CardBody } from "@/components/Card";
 import { ConsentRequestCard } from "@/components/ConsentRequestCard";
 import { BottomTabs } from "@/components/BottomTabs";
 import { useNotifications } from "@/hooks/useNotifications";
+import { triggerHaptic } from "@/lib/haptics";
 
 function ConsentInboxContent() {
   const router = useRouter();
@@ -20,6 +21,7 @@ function ConsentInboxContent() {
   const [requests, setRequests] = useState<ConsentRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [confirmDeny, setConfirmDeny] = useState<ConsentRequest | null>(null);
 
   useEffect(() => {
     markConsentRequestsRead();
@@ -40,15 +42,30 @@ function ConsentInboxContent() {
   }, [addToast, markConsentRequestsRead]);
 
   const handleApprove = (requestId: string) => {
+    triggerHaptic();
     router.push(`/consents/approve/${requestId}`);
   };
 
-  const handleDeny = async (requestId: string) => {
+  const handleDeny = (requestId: string) => {
+    const request = requests.find((item) => item.id === requestId);
+    if (request) {
+      triggerHaptic();
+      setConfirmDeny(request);
+    }
+  };
+
+  const handleConfirmDeny = async () => {
+    if (!confirmDeny) return;
+
     try {
-      setProcessingId(requestId);
-      await consentApi.denyConsentRequest(requestId);
+      setProcessingId(confirmDeny.id);
+      await consentApi.denyConsentRequest(
+        confirmDeny.id,
+        "Patient denied this consent request from the PWA",
+      );
       addToast("Consent request denied", "success");
-      setRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setRequests((prev) => prev.filter((r) => r.id !== confirmDeny.id));
+      setConfirmDeny(null);
     } catch (error) {
       console.error("Failed to deny request:", error);
       addToast("Failed to deny consent request", "error");
@@ -69,7 +86,7 @@ function ConsentInboxContent() {
           <div className="flex items-center justify-center py-12">
             <div className="text-center">
               <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-              <p className="text-gray-600">Loading requests...</p>
+              <p className="text-muted-foreground">Loading requests…</p>
             </div>
           </div>
         ) : requests.length === 0 ? (
@@ -79,7 +96,7 @@ function ConsentInboxContent() {
                 <p className="text-lg font-semibold text-foreground mb-2">
                   No Pending Requests
                 </p>
-                <p className="text-gray-600 mb-6">
+                <p className="mb-6 text-muted-foreground">
                   You have no pending healthcare data requests at this time.
                 </p>
                 <Button
@@ -123,6 +140,48 @@ function ConsentInboxContent() {
           </>
         )}
       </main>
+
+      {confirmDeny && (
+        <div
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="confirm-deny-title"
+        >
+          <div className="w-full max-w-md space-y-4 rounded-lg border border-tertiary bg-background p-5 shadow-xl">
+            <div className="space-y-2">
+              <h2 id="confirm-deny-title" className="text-lg font-bold text-foreground">
+                Deny request?
+              </h2>
+              <p className="text-sm text-muted-foreground">
+                This will tell {confirmDeny.hospital.name} that you do not grant access to{" "}
+                {(confirmDeny.scopes || []).map((scope) => scope.name).join(", ") || "your health data"}.
+              </p>
+            </div>
+            <div className="rounded-lg border border-tertiary bg-secondary p-3 text-sm text-muted-foreground">
+              You can still approve a future request from this provider if your care needs change.
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="secondary"
+                className="flex-1"
+                onClick={() => setConfirmDeny(null)}
+                disabled={processingId === confirmDeny.id}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                className="flex-1"
+                onClick={handleConfirmDeny}
+                loading={processingId === confirmDeny.id}
+              >
+                Confirm Deny
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomTabs />
     </div>

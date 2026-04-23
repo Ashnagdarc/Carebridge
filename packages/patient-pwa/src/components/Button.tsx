@@ -26,20 +26,20 @@ export function Button({
   ...props
 }: ButtonProps) {
   const baseClasses =
-    "font-semibold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info disabled:opacity-50 disabled:cursor-not-allowed";
+    "inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,color,border-color,box-shadow,transform,opacity] duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0";
 
   const variantClasses = {
-    primary: "bg-foreground text-background hover:opacity-80",
+    primary: "bg-foreground text-background shadow-sm hover:opacity-85",
     secondary:
-      "bg-secondary text-foreground border border-tertiary hover:bg-tertiary",
+      "border border-tertiary bg-secondary text-foreground hover:bg-tertiary",
     ghost: "text-foreground hover:bg-secondary",
-    danger: "bg-error text-white hover:opacity-80",
+    danger: "bg-error text-white shadow-sm hover:opacity-85",
   };
 
   const sizeClasses = {
-    sm: "px-3 py-2 text-sm rounded-lg",
-    md: "px-4 py-2 text-base rounded-lg",
-    lg: "px-6 py-3 text-lg rounded-xl",
+    sm: "min-h-10 px-3 py-2 text-sm rounded-lg",
+    md: "min-h-11 px-4 py-2 text-base rounded-lg",
+    lg: "min-h-12 px-6 py-3 text-lg rounded-xl",
   };
 
   return (
@@ -52,7 +52,12 @@ export function Button({
     >
       {loading ? (
         <span className="flex items-center justify-center gap-2">
-          <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+          <svg
+            aria-hidden="true"
+            className="size-4 animate-spin"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
             <circle
               className="opacity-25"
               cx="12"

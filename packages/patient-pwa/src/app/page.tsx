@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import * as React from "react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -17,7 +16,7 @@ const revealWords = [
 export default function Home() {
   const { isAuthenticated } = useAuth();
   const [wordIndex, setWordIndex] = React.useState(0);
-  const destination = isAuthenticated ? "/dashboard" : "/login";
+  const destination = isAuthenticated ? "/dashboard" : "/signup";
 
   React.useEffect(() => {
     const interval = window.setInterval(() => {
@@ -73,12 +72,12 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.45, delay: 0.25, ease: [0.23, 1, 0.32, 1] }}
           >
-            <Link
+            <a
               href={destination}
-              aria-label="Get started with CareBridge"
+              aria-label="Get Started"
               className="inline-flex min-h-12 w-full max-w-[220px] items-center justify-center gap-3 rounded-full bg-white px-5 py-3 text-base font-semibold text-black transition duration-200 hover:bg-white/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-info sm:w-auto sm:max-w-none"
             >
-              Get started
+              Get Started
               <svg
                 aria-hidden="true"
                 className="h-5 w-5"
@@ -93,7 +92,7 @@ export default function Home() {
                   d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
                 />
               </svg>
-            </Link>
+            </a>
           </motion.div>
         </section>
       </main>

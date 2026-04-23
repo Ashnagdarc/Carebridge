@@ -26,8 +26,10 @@ test('Typography + base layout (public)', async ({ page }) => {
 
 test('Landing CTA: Get Started routes to signup', async ({ page }) => {
   await page.goto('/');
-  await page.getByRole('button', { name: 'Get Started' }).click();
-  await expect(page).toHaveURL(/\/signup$/);
+  await Promise.all([
+    page.waitForURL(/\/signup$/),
+    page.getByRole('link', { name: 'Get Started' }).click(),
+  ]);
 });
 
 test.describe('Dark mode', () => {
@@ -58,13 +60,18 @@ test('Auth pages: navigation + tap targets', async ({ page }) => {
   expect(signInBox?.height || 0).toBeGreaterThanOrEqual(40);
 
   const createAccountLink = page.getByRole('link', { name: /create/i });
-  await createAccountLink.click();
-  await expect(page).toHaveURL(/\/signup$/);
+  await Promise.all([
+    page.waitForURL(/\/signup$/),
+    createAccountLink.click(),
+  ]);
   await expect(page.getByRole('heading', { name: 'Create Account' })).toBeVisible();
 
   const signInLink = page.getByRole('link', { name: /sign in/i });
-  await signInLink.click();
-  await expect(page).toHaveURL(/\/login$/);
+  await Promise.all([
+    page.waitForURL(/\/login$/),
+    signInLink.click(),
+  ]);
+  await page.waitForLoadState('domcontentloaded');
 
   await assertNoHorizontalOverflow(page);
   await attachScreenshot(page, 'auth-login');

@@ -3,9 +3,11 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { PatientsService } from './patients.service';
 import {
   ChangePatientPasswordDto,
+  ConfirmPatientPasswordResetDto,
   PatientLoginDto,
   PatientRefreshDto,
   PatientSignupDto,
+  RequestPatientPasswordResetDto,
   UpdatePatientProfileDto,
 } from '../auth/dto/patient-auth.dto';
 import { PatientJwtAuthGuard } from '../auth/guards/patient-jwt-auth.guard';
@@ -59,6 +61,22 @@ export class PatientsController {
   @HttpCode(204)
   async changePassword(@Request() req: any, @Body() dto: ChangePatientPasswordDto) {
     await this.patientsService.changePassword(req.user.patientId, dto);
+    return;
+  }
+
+  @Post('password-reset/request')
+  @HttpCode(202)
+  async requestPasswordReset(@Body() dto: RequestPatientPasswordResetDto) {
+    await this.patientsService.requestPasswordReset(dto);
+    return {
+      message: 'If an account exists for this email, reset instructions have been sent.',
+    };
+  }
+
+  @Post('password-reset/confirm')
+  @HttpCode(204)
+  async confirmPasswordReset(@Body() dto: ConfirmPatientPasswordResetDto) {
+    await this.patientsService.confirmPasswordReset(dto);
     return;
   }
 

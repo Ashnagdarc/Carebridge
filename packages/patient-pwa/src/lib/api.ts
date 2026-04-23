@@ -4,6 +4,8 @@ import {
   PatientAuthResponse,
   UpdateProfileRequest,
   ChangePasswordRequest,
+  RequestPasswordResetRequest,
+  ConfirmPasswordResetRequest,
   PatientSessionListResponse,
   PatientSession,
 } from '@/types/auth';
@@ -260,7 +262,7 @@ function mapConsentRecord(record: BackendConsentRecord): ConsentRecord {
     record.requestingHospitalId,
     record.requestingHospital
   );
-  const expiresAt = toIsoString(record.expiresAt) || '';
+  const expiresAt = toIsoString(record.expiresAt);
   const revokedAt = toIsoString(record.revokedAt);
   const isExpired = expiresAt ? new Date(expiresAt).getTime() <= Date.now() : false;
 
@@ -385,6 +387,34 @@ export const authApi = {
 
     if (!response.ok) {
       throw await readError(response, 'Password change failed');
+    }
+  },
+
+  async requestPasswordReset(data: RequestPasswordResetRequest): Promise<void> {
+    const response = await safeFetch(`${API_URL}/patients/password-reset/request`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }, 'Password reset request failed');
+
+    if (!response.ok) {
+      throw await readError(response, 'Password reset request failed');
+    }
+  },
+
+  async confirmPasswordReset(data: ConfirmPasswordResetRequest): Promise<void> {
+    const response = await safeFetch(`${API_URL}/patients/password-reset/confirm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    }, 'Password reset failed');
+
+    if (!response.ok) {
+      throw await readError(response, 'Password reset failed');
     }
   },
 
@@ -520,9 +550,13 @@ export const consentApi = {
 
   async approveConsentRequest(
     consentRequestId: string,
-    expiryDays: number
+    expiryDays: number | 'indefinite'
   ): Promise<ConsentRequest> {
     const token = this.getToken();
+    const body =
+      expiryDays === 'indefinite'
+        ? { indefinite: true }
+        : { expiryDays };
     const response = await fetch(
       `${API_URL}/consent/requests/${consentRequestId}/approve`,
       {
@@ -531,7 +565,7 @@ export const consentApi = {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ expiryDays }),
+        body: JSON.stringify(body),
       }
     );
 

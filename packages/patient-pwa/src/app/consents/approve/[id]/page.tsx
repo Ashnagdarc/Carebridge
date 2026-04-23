@@ -10,6 +10,7 @@ import { Header } from "@/components/Header";
 import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { BottomTabs } from "@/components/BottomTabs";
+import { triggerHaptic } from "@/lib/haptics";
 
 function ConsentApprovalContent() {
   const router = useRouter();
@@ -64,12 +65,13 @@ function ConsentApprovalContent() {
     if (option === 7) return "7 days";
     if (option === 30) return "30 days";
     if (option === 365) return "1 year";
+    if (option === "indefinite") return "Until revoked";
     return "Custom";
   };
 
   const handleConfirm = async () => {
     try {
-      let expiryDays: number;
+      let expiryDays: number | "indefinite";
       if (selectedExpiry === "custom") {
         const trimmed = customDays.trim();
         if (!trimmed) {
@@ -82,18 +84,26 @@ function ConsentApprovalContent() {
           return;
         }
         expiryDays = parsed;
+      } else if (selectedExpiry === "indefinite") {
+        expiryDays = "indefinite";
       } else {
         expiryDays = selectedExpiry;
       }
 
-      if (expiryDays < 1 || expiryDays > 3650) {
+      if (expiryDays !== "indefinite" && (expiryDays < 1 || expiryDays > 3650)) {
         addToast("Expiry must be between 1 and 3650 days", "error");
         return;
       }
 
       setIsSubmitting(true);
+      triggerHaptic([12, 32, 12]);
       await consentApi.approveConsentRequest(requestId, expiryDays);
-      addToast(`Consent approved for ${expiryDays} days`, "success");
+      addToast(
+        expiryDays === "indefinite"
+          ? "Consent approved until revoked"
+          : `Consent approved for ${expiryDays} days`,
+        "success",
+      );
       router.push("/consents");
     } catch (error) {
       console.error("Failed to approve:", error);
@@ -108,7 +118,7 @@ function ConsentApprovalContent() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-foreground border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-muted-foreground">Loading…</p>
         </div>
       </div>
     );
@@ -161,26 +171,33 @@ function ConsentApprovalContent() {
             </h3>
 
             <div className="space-y-3 mb-6">
-              {([7, 30, 365] as const).map((days) => (
+              {([7, 30, 365, "indefinite"] as const).map((option) => (
                 <label
-                  key={days}
+                  key={option}
                   className="flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors"
                   style={{
-                    borderColor: selectedExpiry === days ? "#000" : "#e5e5e5",
+                    borderColor: selectedExpiry === option ? "#000" : "#e5e5e5",
                     backgroundColor:
-                      selectedExpiry === days ? "#f5f5f5" : "transparent",
+                      selectedExpiry === option ? "#f5f5f5" : "transparent",
                   }}
                 >
                   <input
                     type="radio"
                     name="expiry"
-                    value={days}
-                    checked={selectedExpiry === days}
-                    onChange={() => setSelectedExpiry(days)}
+                    value={option}
+                    checked={selectedExpiry === option}
+                    onChange={() => setSelectedExpiry(option)}
                     className="w-4 h-4 mr-3"
                   />
-                  <span className="font-semibold text-foreground">
-                    {getExpiryLabel(days as ExpiryOption)}
+                  <span className="flex flex-col">
+                    <span className="font-semibold text-foreground">
+                      {getExpiryLabel(option as ExpiryOption)}
+                    </span>
+                    {option === "indefinite" && (
+                      <span className="text-xs text-muted-foreground">
+                        No automatic expiry; you can revoke it anytime.
+                      </span>
+                    )}
                   </span>
                 </label>
               ))}
@@ -223,7 +240,7 @@ function ConsentApprovalContent() {
             <div className="bg-yellow-50 border border-yellow-200 p-3 rounded mb-6">
               <p className="text-sm text-yellow-900">
                 <strong>Note:</strong> You can revoke this access at any time
-                from your active consents.
+                from your active consents. Choose “Until revoked” only for ongoing care relationships.
               </p>
             </div>
 
@@ -235,7 +252,7 @@ function ConsentApprovalContent() {
                 loading={isSubmitting}
                 className="flex-1"
               >
-                {isSubmitting ? "Confirming..." : "Confirm Approval"}
+                {isSubmitting ? "Confirming…" : "Confirm Approval"}
               </Button>
               <Button
                 variant="secondary"

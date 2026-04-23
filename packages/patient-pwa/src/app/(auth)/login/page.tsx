@@ -2,7 +2,6 @@
 
 import React, { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { AuthPanel, AuthScreen } from "@/components/AuthScreen";
 import { useAuth } from "@/hooks/useAuth";
 import { FormInput } from "@/components/FormInput";
@@ -57,6 +56,7 @@ export default function LoginPage() {
       );
       setErrors(errorMap);
       setIsSubmitting(false);
+      setPlayAnimation(false);
       return;
     }
 
@@ -76,7 +76,7 @@ export default function LoginPage() {
       <AuthScreen>
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-white/70">Loading...</p>
+          <p className="text-white/70">Loading…</p>
         </div>
       </AuthScreen>
     );
@@ -149,7 +149,6 @@ export default function LoginPage() {
             ariaLabel="Sign In"
             steps={authActionSteps.signIn}
             isRunning={playAnimation}
-            runningLabel="Logging in..."
             disabled={isSubmitting}
             onDone={() => {
               setPlayAnimation(false);
@@ -160,21 +159,21 @@ export default function LoginPage() {
 
         {/* Links */}
         <div className="space-y-3 text-center">
-          <Link
+          <a
             href="/forgot-password"
             className="block text-info text-sm font-semibold hover:underline"
           >
             Forgot your password?
-          </Link>
+          </a>
 
           <div className="border-t border-tertiary pt-3">
             <p className="text-white/60 mb-2">Don&apos;t have an account?</p>
-            <Link
+            <a
               href="/signup"
               className="text-info font-semibold hover:underline"
             >
               Create one now
-            </Link>
+            </a>
           </div>
         </div>
 

@@ -22,9 +22,14 @@ export function FormInput({
   onChange,
   id,
   className,
+  name,
+  inputMode,
+  spellCheck,
   ...props
 }: FormInputProps) {
   const inputId = id || `input-${label.toLowerCase().replace(/\s+/g, "-")}`;
+  const inputName = name || label.toLowerCase().replace(/\s+/g, "-");
+  const isEmail = props.type === "email" || inputName.includes("email");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onChange) {
@@ -42,6 +47,9 @@ export function FormInput({
       </label>
       <input
         id={inputId}
+        name={inputName}
+        inputMode={isEmail ? "email" : inputMode}
+        spellCheck={isEmail ? false : spellCheck}
         className={`w-full px-4 py-3 rounded-lg border-2 transition-colors focus:outline-none focus:border-info
           ${
             error

@@ -11,6 +11,7 @@ import { FormInput } from "@/components/FormInput";
 import { BottomTabs } from "@/components/BottomTabs";
 import { useToast } from "@/providers/ToastProvider";
 import { authApi } from "@/lib/api";
+import { triggerHaptic } from "@/lib/haptics";
 import {
   UpdateProfileRequest,
   ChangePasswordRequest,
@@ -94,6 +95,7 @@ function SettingsContent() {
         dateOfBirth: accountForm.dateOfBirth || undefined,
       };
       await authApi.updateProfile(updateData);
+      triggerHaptic();
       addToast("Profile updated successfully", "success");
     } catch (error) {
       addToast("Failed to update profile", "error");
@@ -115,6 +117,7 @@ function SettingsContent() {
         newPassword: passwordForm.newPassword,
       };
       await authApi.changePassword(changeData);
+      triggerHaptic();
       addToast("Password changed successfully", "success");
       setPasswordForm({
         currentPassword: "",
@@ -129,6 +132,7 @@ function SettingsContent() {
   };
 
   const handleNotificationToggle = (key: keyof typeof notifications) => {
+    triggerHaptic(8);
     setNotifications(prev => ({
       ...prev,
       [key]: !prev[key],
@@ -143,6 +147,7 @@ function SettingsContent() {
     setLoading(true);
     try {
       await authApi.signOutAll();
+      triggerHaptic([12, 28, 12]);
       addToast("Signed out of all devices", "success");
       logout();
       router.push("/login");
@@ -161,6 +166,7 @@ function SettingsContent() {
     setLoading(true);
     try {
       await authApi.deleteAccount();
+      triggerHaptic([16, 36, 16]);
       addToast("Account deleted", "success");
       logout();
       router.push("/login");
@@ -179,6 +185,7 @@ function SettingsContent() {
     setLoading(true);
     try {
       addToast("Signed out", "success");
+      triggerHaptic(10);
       logout();
       router.push("/login");
     } finally {
@@ -190,6 +197,7 @@ function SettingsContent() {
     setSessionsLoading(true);
     try {
       await authApi.revokeSession(sessionId);
+      triggerHaptic();
       addToast("Session signed out", "success");
       await loadSessions();
     } catch (error) {
@@ -208,16 +216,20 @@ function SettingsContent() {
 
       <main className="px-4 py-6 space-y-6">
         {/* Section Tabs */}
-        <div className="flex gap-1 bg-secondary rounded-lg p-1">
+        <div className="flex gap-1 rounded-lg bg-secondary p-1" role="tablist" aria-label="Settings sections">
           {[
             { key: "account" as const, label: "Account" },
             { key: "notifications" as const, label: "Notifications" },
             { key: "security" as const, label: "Security" },
           ].map(({ key, label }) => (
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeSection === key}
+              aria-controls={`settings-panel-${key}`}
               key={key}
               onClick={() => setActiveSection(key)}
-              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition-[background-color,color,box-shadow] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info ${
                 activeSection === key
                   ? "bg-background text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
@@ -230,7 +242,7 @@ function SettingsContent() {
 
         {/* Account Section */}
         {activeSection === "account" && (
-          <div className="space-y-6">
+          <div id="settings-panel-account" role="tabpanel" className="space-y-6">
             <Card>
               <CardBody>
                 <h3 className="text-lg font-semibold mb-4">Profile Information</h3>
@@ -311,7 +323,7 @@ function SettingsContent() {
 
         {/* Notifications Section */}
         {activeSection === "notifications" && (
-          <Card>
+          <Card id="settings-panel-notifications" role="tabpanel">
             <CardBody>
               <h3 className="text-lg font-semibold mb-4">Notification Preferences</h3>
               <div className="space-y-4">
@@ -327,18 +339,23 @@ function SettingsContent() {
                     </p>
                   </div>
                   <button
+                    type="button"
+                    role="switch"
+                    aria-label="Push Notifications on This Device"
+                    aria-checked={pushEnabled}
                     onClick={async () => {
+                      triggerHaptic(8);
                       if (pushEnabled) await disablePush();
                       else await enablePush();
                     }}
                     disabled={!pushSupported || pushPermission === "denied"}
-                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info ${
                       pushEnabled ? "bg-primary" : "bg-gray-200"
                     } ${!pushSupported || pushPermission === "denied" ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                        pushEnabled ? "translate-x-6" : "translate-x-1"
+                      className={`inline-block size-6 transform rounded-full bg-white shadow-sm transition-transform ${
+                        pushEnabled ? "translate-x-7" : "translate-x-1"
                       }`}
                     />
                   </button>
@@ -355,14 +372,18 @@ function SettingsContent() {
                       <p className="text-sm text-muted-foreground">{description}</p>
                     </div>
                     <button
+                      type="button"
+                      role="switch"
+                      aria-label={label}
+                      aria-checked={notifications[key]}
                       onClick={() => handleNotificationToggle(key)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info ${
                         notifications[key] ? "bg-primary" : "bg-gray-200"
                       }`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                          notifications[key] ? "translate-x-6" : "translate-x-1"
+                        className={`inline-block size-6 transform rounded-full bg-white shadow-sm transition-transform ${
+                          notifications[key] ? "translate-x-7" : "translate-x-1"
                         }`}
                       />
                     </button>
@@ -375,7 +396,7 @@ function SettingsContent() {
 
         {/* Security Section */}
         {activeSection === "security" && (
-          <div className="space-y-6">
+          <div id="settings-panel-security" role="tabpanel" className="space-y-6">
             <Card>
               <CardBody>
                 <h3 className="text-lg font-semibold mb-4">Active Sessions</h3>
@@ -425,7 +446,7 @@ function SettingsContent() {
                 className="fixed inset-0 z-50 bg-black/40 flex items-end sm:items-center justify-center p-4"
                 role="dialog"
                 aria-modal="true"
-                aria-label="Sessions"
+                aria-labelledby="sessions-dialog-title"
                 onClick={() => setSessionsOpen(false)}
               >
                 <div
@@ -435,9 +456,10 @@ function SettingsContent() {
                   <Card>
                     <CardBody>
                       <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold">Sessions</h4>
+                        <h4 id="sessions-dialog-title" className="text-lg font-semibold">Sessions</h4>
                         <button
-                          className="text-sm text-muted-foreground hover:text-foreground"
+                          type="button"
+                          className="min-h-10 rounded-md px-3 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info"
                           onClick={() => setSessionsOpen(false)}
                         >
                           Close

@@ -11,6 +11,8 @@ import { QRCodeDisplay } from "@/components/QRCodeDisplay";
 import { BottomTabs } from "@/components/BottomTabs";
 import { generateUID } from "@/lib/uid";
 import { consentApi } from "@/lib/api";
+import { triggerHaptic } from "@/lib/haptics";
+import { LogOut, Settings } from "lucide-react";
 
 function DashboardContent() {
   const router = useRouter();
@@ -25,6 +27,7 @@ function DashboardContent() {
   }, [user]);
 
   const handleLogout = () => {
+    triggerHaptic(10);
     logout();
     router.push("/login");
   };
@@ -32,6 +35,7 @@ function DashboardContent() {
   const handleCopyUID = async () => {
     try {
       await navigator.clipboard.writeText(patientUID);
+      triggerHaptic([8, 20, 8]);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
@@ -64,18 +68,24 @@ function DashboardContent() {
         title="Dashboard"
         subtitle={`Welcome, ${user?.name}`}
         action={
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
+          <>
+            <button
+              type="button"
+              aria-label="Open settings"
               onClick={() => router.push("/settings")}
+              className="flex size-10 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] hover:bg-background hover:text-foreground active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info"
             >
-              Settings
-            </Button>
-            <Button variant="ghost" size="sm" onClick={handleLogout}>
-              Logout
-            </Button>
-          </div>
+              <Settings aria-hidden="true" className="size-5" />
+            </button>
+            <button
+              type="button"
+              aria-label="Log out"
+              onClick={handleLogout}
+              className="flex size-10 items-center justify-center rounded-full text-muted-foreground transition-[background-color,color,transform] hover:bg-background hover:text-foreground active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info"
+            >
+              <LogOut aria-hidden="true" className="size-5" />
+            </button>
+          </>
         }
       />
 

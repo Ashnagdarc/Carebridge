@@ -66,3 +66,17 @@ export class ChangePatientPasswordDto {
   @MinLength(8)
   newPassword: string;
 }
+
+export class RequestPatientPasswordResetDto {
+  @IsEmail()
+  email: string;
+}
+
+export class ConfirmPatientPasswordResetDto {
+  @IsString()
+  token: string;
+
+  @IsString()
+  @MinLength(8)
+  newPassword: string;
+}

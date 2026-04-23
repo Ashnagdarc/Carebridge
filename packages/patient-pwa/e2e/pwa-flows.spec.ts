@@ -274,7 +274,7 @@ test('Consent History revoke + Settings session management', async ({ page, cont
   });
 
   await page.goto('/settings');
-  await page.getByRole('button', { name: 'Security' }).click();
+  await page.getByRole('tab', { name: 'Security' }).click();
   await expect(page.getByText(/Active Sessions:/)).toBeVisible();
   await page.getByRole('button', { name: 'View Sessions' }).click();
   await expect(page.getByRole('heading', { name: 'Sessions', exact: true })).toBeVisible();
@@ -284,4 +284,23 @@ test('Consent History revoke + Settings session management', async ({ page, cont
   await context.setOffline(true);
   await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
   await context.setOffline(false);
+});
+
+test('Password reset link sets a new password', async ({ page }) => {
+  await page.route('**/api/v1/patients/password-reset/confirm', async (route) => {
+    if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
+    await route.fulfill({
+      status: 204,
+      headers: withCorsHeaders(),
+      body: '',
+    });
+  });
+
+  await page.goto('/reset-password?token=reset-token-123');
+  await expect(page.getByRole('heading', { name: 'Create new password' })).toBeVisible();
+  await page.getByLabel('New Password').fill('NewPassword123');
+  await page.getByLabel('Confirm Password').fill('NewPassword123');
+  await page.getByRole('button', { name: 'Reset password' }).click();
+
+  await expect(page.getByText('Your password has been reset.')).toBeVisible();
 });

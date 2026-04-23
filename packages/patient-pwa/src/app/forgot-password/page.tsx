@@ -5,6 +5,8 @@ import Link from "next/link";
 import { AuthPanel, AuthScreen } from "@/components/AuthScreen";
 import { FormInput } from "@/components/FormInput";
 import { RunActionButton, authActionSteps } from "@/components/RunActionButton";
+import { authApi } from "@/lib/api";
+import { triggerHaptic } from "@/lib/haptics";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -12,16 +14,18 @@ export default function ForgotPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [playAnimation, setPlayAnimation] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     setPlayAnimation(true);
 
-    // keep the simulated request; actual API will set submitted on success
-    window.setTimeout(() => {
+    try {
+      await authApi.requestPasswordReset({ email });
+    } catch (error) {
+      console.error("Password reset request failed:", error);
+    } finally {
       setIsSubmitting(false);
-      // wait for animation to call onDone to reveal submitted state
-    }, 1600);
+    }
   };
 
   return (
@@ -31,7 +35,7 @@ export default function ForgotPasswordPage() {
           <div className="text-center space-y-2">
             <h1 className="text-3xl font-bold text-white">Reset password</h1>
             <p className="text-white/60 text-sm">
-              Enter your email address and we’ll send reset instructions.
+              Enter your email address to request password reset instructions.
             </p>
           </div>
 
@@ -68,9 +72,9 @@ export default function ForgotPasswordPage() {
                 ariaLabel="Send reset link"
                 steps={authActionSteps.reset}
                 isRunning={playAnimation}
-                runningLabel="Sending reset link..."
                 disabled={isSubmitting}
                 onDone={() => {
+                  triggerHaptic([8, 20, 8]);
                   setPlayAnimation(false);
                   setSubmitted(true);
                 }}

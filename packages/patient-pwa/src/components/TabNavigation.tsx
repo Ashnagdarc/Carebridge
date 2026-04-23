@@ -43,39 +43,44 @@ export function TabNavigation({ items }: TabNavigationProps) {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-background border-t border-tertiary safe-area-inset-bottom"
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-50 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)]"
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="flex justify-around items-stretch">
+      <div className="pointer-events-auto mx-auto flex max-w-2xl items-stretch justify-around gap-1 rounded-[1.6rem] border border-white/10 bg-background/80 p-1.5 shadow-[0_18px_50px_rgba(0,0,0,0.22)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/62">
         {items.map((item) => {
           const isActive = activeHref === item.href;
+          const icon = React.isValidElement(item.icon)
+            ? React.cloneElement(item.icon as React.ReactElement<{ "aria-hidden"?: boolean }>, {
+                "aria-hidden": true,
+              })
+            : item.icon;
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex-1 flex flex-col items-center justify-center py-3 px-2 relative transition-colors ${
+              className={`group relative flex min-h-[58px] flex-1 flex-col items-center justify-center rounded-[1.15rem] px-2 py-2 transition-[color,background-color,transform,box-shadow] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info ${
                 isActive
-                  ? "text-foreground"
-                  : "text-gray-500 hover:text-foreground"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:bg-secondary/70 hover:text-foreground"
               }`}
               aria-current={isActive ? "page" : undefined}
             >
-              <div className="w-6 h-6 flex items-center justify-center relative">
-                {item.icon}
+              <div className={`relative flex size-7 items-center justify-center rounded-full transition-transform duration-200 ${isActive ? "-translate-y-0.5 scale-105" : "group-hover:-translate-y-0.5"}`}>
+                {icon}
                 {item.badge !== undefined && item.badge > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-error text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                    {item.badge > 99 ? "99+" : item.badge}
+                  <span className="absolute -right-2.5 -top-2.5 flex min-w-5 items-center justify-center rounded-full border border-background bg-error px-1 text-xs font-bold leading-5 text-white">
+                    <span aria-hidden="true">{item.badge > 99 ? "99+" : item.badge}</span>
+                    <span className="sr-only">
+                      {item.badge} unread consent {item.badge === 1 ? "request" : "requests"}
+                    </span>
                   </span>
                 )}
               </div>
-              <span className="text-xs mt-1 font-medium truncate">
+              <span className="mt-1 max-w-full truncate text-[0.72rem] font-semibold leading-none">
                 {item.label}
               </span>
-              {isActive && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-foreground rounded-full"></div>
-              )}
             </Link>
           );
         })}

@@ -53,6 +53,10 @@ describe('Data request consent-to-routing integration', () => {
 
     const matchWhere = (record: any, where: any = {}) =>
       Object.entries(where).every(([key, value]: [string, any]) => {
+        if (key === 'OR' && Array.isArray(value)) {
+          return value.some((condition) => matchWhere(record, condition));
+        }
+
         if (value && typeof value === 'object' && 'gt' in value) {
           return record[key] > value.gt;
         }
