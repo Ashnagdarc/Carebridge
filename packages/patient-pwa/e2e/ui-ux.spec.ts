@@ -111,6 +111,41 @@ test('Authed navigation: tabs + headings + icons', async ({ page }) => {
   await assertNoHorizontalOverflow(page);
 });
 
+test('Settings: notification toggles work', async ({ page }) => {
+  await seedAuthStorage(page);
+  await installDefaultApiMocks(page);
+
+  await page.goto('/settings');
+  await expect(page.getByRole('heading', { name: 'Settings' })).toBeVisible();
+
+  await page.getByRole('tab', { name: 'Notifications' }).click();
+  await expect(page.locator('#settings-panel-notifications')).toBeVisible();
+
+  const pushToggle = page.getByRole('switch', {
+    name: 'Push Notifications on This Device',
+  });
+  await expect(pushToggle).toBeVisible();
+
+  const toggles = [
+    { label: 'New Consent Requests' },
+    { label: 'Data Access Logs' },
+    { label: 'Consent Expiry Reminders' },
+  ];
+
+  for (const { label } of toggles) {
+    const switch_ = page.getByRole('switch', { name: label });
+    await expect(switch_).toBeVisible();
+    const before = await switch_.getAttribute('aria-checked');
+    await switch_.click();
+    await expect(switch_).toHaveAttribute(
+      'aria-checked',
+      before === 'true' ? 'false' : 'true',
+    );
+  }
+
+  await attachScreenshot(page, 'settings-toggles-work');
+});
+
 test('All key pages: responsive smoke (no horizontal scroll)', async ({ page }) => {
   await seedAuthStorage(page);
   await installDefaultApiMocks(page);

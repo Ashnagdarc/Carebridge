@@ -2,6 +2,7 @@ import withPWA from 'next-pwa';
 
 /** @type {import('next').NextConfig} */
 const isProd = process.env.NODE_ENV === 'production';
+const enablePushInDev = process.env.ENABLE_PUSH_IN_DEV === 'true';
 
 const connectSrc = isProd ? "connect-src 'self' https: wss:" : "connect-src 'self' http: https: ws: wss:";
 
@@ -58,5 +59,6 @@ export default withPWA({
   skipWaiting: false,
   sw: 'sw.js',
   importScripts: ['/notifications-sw.js'],
-  disable: process.env.NODE_ENV === 'development',
+  // Keep SW/PWA off in dev by default; opt in explicitly when testing push locally.
+  disable: process.env.NODE_ENV === 'development' && !enablePushInDev,
 })(nextConfig);

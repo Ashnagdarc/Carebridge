@@ -75,10 +75,20 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     return "Notification" in window && "serviceWorker" in navigator && "PushManager" in window;
   }, []);
 
-  const pushPermission: NotificationPermission | "unsupported" = useMemo(() => {
-    if (typeof window === "undefined") return "unsupported";
-    if (!("Notification" in window)) return "unsupported";
-    return Notification.permission;
+  const [pushPermission, setPushPermission] = useState<NotificationPermission | "unsupported">(
+    "unsupported",
+  );
+
+  const refreshPushPermission = useCallback(() => {
+    if (typeof window === "undefined") {
+      setPushPermission("unsupported");
+      return;
+    }
+    if (!("Notification" in window)) {
+      setPushPermission("unsupported");
+      return;
+    }
+    setPushPermission(Notification.permission);
   }, []);
 
   useEffect(() => {
@@ -92,6 +102,21 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       // ignore
     }
   }, []);
+
+  useEffect(() => {
+    refreshPushPermission();
+  }, [refreshPushPermission]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const handleRefresh = () => refreshPushPermission();
+    window.addEventListener("focus", handleRefresh);
+    document.addEventListener("visibilitychange", handleRefresh);
+    return () => {
+      window.removeEventListener("focus", handleRefresh);
+      document.removeEventListener("visibilitychange", handleRefresh);
+    };
+  }, [refreshPushPermission]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -206,7 +231,15 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       addToast("Push notifications are not supported on this device", "warning");
       return;
     }
+
+    if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "denied") {
+      addToast("Notifications are blocked in browser settings for this site", "warning");
+      setPushEnabled(false);
+      return;
+    }
+
     const permission = await Notification.requestPermission();
+    setPushPermission(permission);
     if (permission !== "granted") {
       addToast("Push notifications permission was not granted", "warning");
       setPushEnabled(false);
@@ -222,7 +255,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) {
-      addToast("Service worker not active (push works on production build)", "warning");
+      addToast("Service worker not active (enable ENABLE_PUSH_IN_DEV=true for local dev)", "warning");
       setPushEnabled(false);
       return;
     }

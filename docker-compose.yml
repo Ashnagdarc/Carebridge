@@ -56,6 +56,7 @@ services:
     volumes:
       - ./packages/patient-pwa:/app
       - /app/node_modules
+      - /app/.next
     working_dir: /app
     command: sh -c "npm install && npm run dev -- --port 3001"
     networks:

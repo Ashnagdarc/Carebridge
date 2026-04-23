@@ -243,11 +243,15 @@ export async function installDefaultApiMocks(page: Page) {
         contentType: 'application/json',
         headers: withCorsHeaders(),
         body: JSON.stringify({
-          id: mockLogin.patient.id,
-          email: mockLogin.patient.email,
-          firstName: 'Updated',
-          lastName: 'User',
-          externalId: mockLogin.patient.externalId,
+          accessToken: mockLogin.accessToken,
+          refreshToken: mockLogin.refreshToken,
+          expiresIn: mockLogin.expiresIn,
+          tokenType: mockLogin.tokenType,
+          patient: {
+            ...mockLogin.patient,
+            firstName: 'Updated',
+            lastName: 'User',
+          },
         }),
       });
       return;

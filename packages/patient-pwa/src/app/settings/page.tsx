@@ -9,6 +9,7 @@ import { Button } from "@/components/Button";
 import { Card, CardBody } from "@/components/Card";
 import { FormInput } from "@/components/FormInput";
 import { BottomTabs } from "@/components/BottomTabs";
+import { IconSwitch } from "@/components/ui/icon-switch";
 import { useToast } from "@/providers/ToastProvider";
 import { authApi } from "@/lib/api";
 import { triggerHaptic } from "@/lib/haptics";
@@ -327,7 +328,7 @@ function SettingsContent() {
             <CardBody>
               <h3 className="text-lg font-semibold mb-4">Notification Preferences</h3>
               <div className="space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex-1">
                     <p className="font-medium">Push Notifications (This Device)</p>
                     <p className="text-sm text-muted-foreground">
@@ -338,55 +339,47 @@ function SettingsContent() {
                         : "Not supported on this device/browser"}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-label="Push Notifications on This Device"
-                    aria-checked={pushEnabled}
-                    onClick={async () => {
+                  <IconSwitch
+                    checked={pushEnabled}
+                    onCheckedChange={async (checked) => {
                       triggerHaptic(8);
-                      if (pushEnabled) await disablePush();
-                      else await enablePush();
+                      if (checked) await enablePush();
+                      else await disablePush();
                     }}
-                    disabled={!pushSupported || pushPermission === "denied"}
-                    className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info ${
-                      pushEnabled ? "bg-primary" : "bg-gray-200"
-                    } ${!pushSupported || pushPermission === "denied" ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    <span
-                      className={`inline-block size-6 transform rounded-full bg-white shadow-sm transition-transform ${
-                        pushEnabled ? "translate-x-7" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
+                    disabled={!pushSupported}
+                    aria-label="Push Notifications on This Device"
+                    className="shrink-0"
+                  />
                 </div>
 
                 {[
-                  { key: "newRequests" as const, label: "New Consent Requests", description: "Get notified when hospitals request access to your data" },
-                  { key: "accessLogs" as const, label: "Data Access Logs", description: "Receive updates when your data is accessed" },
-                  { key: "expiryReminders" as const, label: "Consent Expiry Reminders", description: "Get reminded before your consents expire" },
+                  {
+                    key: "newRequests" as const,
+                    label: "New Consent Requests",
+                    description: "Get notified when hospitals request access to your data",
+                  },
+                  {
+                    key: "accessLogs" as const,
+                    label: "Data Access Logs",
+                    description: "Receive updates when your data is accessed",
+                  },
+                  {
+                    key: "expiryReminders" as const,
+                    label: "Consent Expiry Reminders",
+                    description: "Get reminded before your consents expire",
+                  },
                 ].map(({ key, label, description }) => (
-                  <div key={key} className="flex items-center justify-between">
+                  <div key={key} className="flex items-center justify-between gap-4">
                     <div className="flex-1">
                       <p className="font-medium">{label}</p>
                       <p className="text-sm text-muted-foreground">{description}</p>
                     </div>
-                    <button
-                      type="button"
-                      role="switch"
+                    <IconSwitch
+                      checked={notifications[key]}
+                      onCheckedChange={() => handleNotificationToggle(key)}
                       aria-label={label}
-                      aria-checked={notifications[key]}
-                      onClick={() => handleNotificationToggle(key)}
-                      className={`relative inline-flex h-8 w-14 shrink-0 items-center rounded-full transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-info ${
-                        notifications[key] ? "bg-primary" : "bg-gray-200"
-                      }`}
-                    >
-                      <span
-                        className={`inline-block size-6 transform rounded-full bg-white shadow-sm transition-transform ${
-                          notifications[key] ? "translate-x-7" : "translate-x-1"
-                        }`}
-                      />
-                    </button>
+                      className="shrink-0"
+                    />
                   </div>
                 ))}
               </div>
