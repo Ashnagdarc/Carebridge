@@ -27,10 +27,6 @@ jest.mock("@/hooks/useAuth", () => ({
       firstName: "Test",
       lastName: "User",
       externalId: "ext123",
-      accessToken: "token",
-      refreshToken: "refresh",
-      expiresIn: 3600,
-      tokenType: "Bearer",
     },
     logout: jest.fn(),
   }),
@@ -54,7 +50,6 @@ jest.mock("@/lib/api", () => ({
     deleteAccount: jest.fn(),
     getSessions: jest.fn(async () => ({ sessions: [], total: 0, activeCount: 0 })),
     revokeSession: jest.fn(),
-    getToken: jest.fn(() => "mock-token"),
   },
 }));
 

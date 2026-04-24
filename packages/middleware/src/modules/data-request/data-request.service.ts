@@ -5,11 +5,13 @@ import {
   GatewayTimeoutException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { Inject, forwardRef } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom, timeout, retry } from 'rxjs';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { ConsentService } from '../consent/consent.service';
 import { AuditService } from '../audit/audit.service';
+import { DefenseService } from '../defense/defense.service';
 import {
   CreateDataRequestDto,
   DataRequestResponseDto,
@@ -22,6 +24,10 @@ import {
 @Injectable()
 export class DataRequestService {
   private readonly REQUEST_TIMEOUT_MS = 10000; // 10 seconds
+  private readonly DEFENSE_STEP_DELAY_MS = Math.max(
+    0,
+    Number(process.env.DEFENSE_DEMO_STEP_DELAY_MS || 1200),
+  );
   private readonly RETRY_ATTEMPTS = 3;
   private readonly RETRY_DELAY_MS = 1000;
   private readonly HOSPITAL_API_TOKEN =
@@ -31,10 +37,152 @@ export class DataRequestService {
 
   constructor(
     private prisma: PrismaService,
+    @Inject(forwardRef(() => ConsentService))
     private consentService: ConsentService,
     private auditService: AuditService,
     private httpService: HttpService,
+    @Inject(forwardRef(() => DefenseService))
+    private defenseService: DefenseService,
   ) {}
+
+  async resumePendingRequestsForConsent(consentRequestId: string) {
+    if (!consentRequestId) return { resumed: 0 };
+
+    const pending = await this.prisma.dataRequest.findMany({
+      where: {
+        consentRequestId,
+        status: DataRequestStatus.PENDING,
+      },
+      select: { id: true },
+    });
+
+    for (const req of pending) {
+      await this.resumeDataRequest(req.id);
+    }
+
+    return { resumed: pending.length };
+  }
+
+  async failPendingRequestsForConsent(
+    consentRequestId: string,
+    reason = 'Consent request denied by patient',
+  ) {
+    if (!consentRequestId) return { failed: 0 };
+
+    const pending = await this.prisma.dataRequest.findMany({
+      where: {
+        consentRequestId,
+        status: DataRequestStatus.PENDING,
+      },
+      select: {
+        id: true,
+        patientId: true,
+        sourceHospitalId: true,
+      },
+    });
+
+    if (pending.length === 0) {
+      return { failed: 0 };
+    }
+
+    await this.prisma.dataRequest.updateMany({
+      where: {
+        consentRequestId,
+        status: DataRequestStatus.PENDING,
+      },
+      data: {
+        status: DataRequestStatus.FAILED,
+        failureReason: reason,
+        completedAt: new Date(),
+      },
+    });
+
+    await Promise.all(
+      pending.map((request) =>
+        this.auditService.createAuditLog({
+          action: 'data_request_failed',
+          resourceType: 'data_request',
+          resourceId: request.id,
+          patientId: request.patientId,
+          hospitalId: request.sourceHospitalId,
+          status: 'failed',
+          details: JSON.stringify({
+            reason,
+            phase: 'consent_denied',
+            consentRequestId,
+          }),
+        }),
+      ),
+    );
+
+    pending.forEach((request) => {
+      this.defenseService.emit('data_request_failed', {
+        dataRequestId: request.id,
+        patientId: request.patientId,
+        sourceHospitalId: request.sourceHospitalId,
+        status: DataRequestStatus.FAILED,
+        failureReason: reason,
+      });
+    });
+
+    return { failed: pending.length };
+  }
+
+  async resumeDataRequest(dataRequestId: string): Promise<DataRequestResponseDto> {
+    const dataRequest = await this.prisma.dataRequest.findUnique({
+      where: { id: dataRequestId },
+    });
+
+    if (!dataRequest) {
+      throw new BadRequestException(`Data request "${dataRequestId}" not found`);
+    }
+
+    if (dataRequest.status !== DataRequestStatus.PENDING) {
+      return this.mapDataRequestToResponse(dataRequest);
+    }
+
+    const patient = await this.prisma.patient.findUnique({
+      where: { id: dataRequest.patientId },
+    });
+    if (!patient) {
+      throw new BadRequestException(`Patient "${dataRequest.patientId}" not found`);
+    }
+
+    const [sourceHospital, targetHospital] = await Promise.all([
+      this.prisma.hospital.findUnique({ where: { id: dataRequest.sourceHospitalId } }),
+      this.prisma.hospital.findUnique({ where: { id: dataRequest.targetHospitalId } }),
+    ]);
+
+    if (!sourceHospital) {
+      throw new BadRequestException(`Source hospital "${dataRequest.sourceHospitalId}" not found`);
+    }
+    if (!targetHospital) {
+      throw new BadRequestException(`Target hospital "${dataRequest.targetHospitalId}" not found`);
+    }
+
+    const consentRecordId =
+      dataRequest.consentRecordId ||
+      (dataRequest.consentRequestId
+        ? (
+            await this.prisma.consentRecord.findFirst({
+              where: {
+                consentRequestId: dataRequest.consentRequestId,
+                revokedAt: null,
+              },
+              select: { id: true },
+            })
+          )?.id
+        : undefined);
+
+    return this.routeDataRequest(
+      dataRequest,
+      sourceHospital,
+      targetHospital,
+      patient,
+      consentRecordId ?? 'consent_from_check',
+      Date.now(),
+    );
+  }
 
   /**
    * Create a data request between hospitals
@@ -104,21 +252,29 @@ export class DataRequestService {
       },
     });
 
+    this.defenseService.emit('data_request_created', {
+      dataRequestId: dataRequest.id,
+      patientId: dataRequest.patientId,
+      sourceHospitalId,
+      targetHospitalId: dto.targetHospitalId,
+      dataTypes: dto.dataTypes,
+      purpose: dto.purpose || null,
+      status: DataRequestStatus.PENDING,
+    });
+
     try {
       // Check if patient has active consent for source hospital
-      // For data requests, check if any of the requested dataTypes are consented
-      let hasConsent = false;
-      for (const dataType of dto.dataTypes) {
-        const isConsented = await this.consentService.hasActiveConsent(
-          dto.patientId,
-          sourceHospitalId,
-          dataType,
-        );
-        if (isConsented) {
-          hasConsent = true;
-          break;
-        }
-      }
+      // For data requests, all requested dataTypes must be consented
+      const consentChecks = await Promise.all(
+        dto.dataTypes.map((dataType) =>
+          this.consentService.hasActiveConsent(
+            dto.patientId,
+            sourceHospitalId,
+            dataType,
+          ),
+        ),
+      );
+      const hasConsent = consentChecks.every(Boolean);
 
       if (!hasConsent) {
         // Create consent request if not already consented
@@ -134,6 +290,7 @@ export class DataRequestService {
           where: { id: dataRequest.id },
           data: {
             status: DataRequestStatus.PENDING,
+            consentRequestId: consentRequest.id,
             failureReason:
               'Awaiting patient consent. Consent request initiated.',
           },
@@ -151,6 +308,16 @@ export class DataRequestService {
             reason: 'No active consent',
             consentRequestId: consentRequest.id,
           }),
+        });
+
+        this.defenseService.emit('consent_request_created', {
+          dataRequestId: dataRequest.id,
+          consentRequestId: consentRequest.id,
+          patientId: dto.patientId,
+          sourceHospitalId,
+          targetHospitalId: dto.targetHospitalId,
+          dataTypes: dto.dataTypes,
+          status: DataRequestStatus.PENDING,
         });
 
         return this.mapDataRequestToResponse(dataRequest);
@@ -219,6 +386,28 @@ export class DataRequestService {
         data: { status: DataRequestStatus.IN_PROGRESS },
       });
 
+      this.defenseService.emit('data_request_in_progress', {
+        dataRequestId: dataRequest.id,
+        patientId: patient.id,
+        sourceHospitalId: sourceHospital.id,
+        targetHospitalId: targetHospital.id,
+        dataTypes: dataRequest.dataTypes,
+        status: DataRequestStatus.IN_PROGRESS,
+      });
+
+      const isDefenseDemo = this.isDefenseDemoRequest(dataRequest);
+      if (isDefenseDemo) {
+        this.defenseService.emit('data_fetch_started', {
+          dataRequestId: dataRequest.id,
+          patientId: patient.id,
+          sourceHospitalId: sourceHospital.id,
+          targetHospitalId: targetHospital.id,
+          dataTypes: dataRequest.dataTypes,
+          status: DataRequestStatus.IN_PROGRESS,
+        });
+        await this.delay(this.DEFENSE_STEP_DELAY_MS);
+      }
+
       // Fetch data from the hospital holding the records, then deliver it to
       // the requesting hospital. The existing DTO uses sourceHospitalId for
       // the requester and targetHospitalId for the data holder.
@@ -227,6 +416,17 @@ export class DataRequestService {
         patient.id,
         dataRequest.dataTypes,
       );
+      if (isDefenseDemo) {
+        this.defenseService.emit('data_delivery_started', {
+          dataRequestId: dataRequest.id,
+          patientId: patient.id,
+          sourceHospitalId: sourceHospital.id,
+          targetHospitalId: targetHospital.id,
+          dataTypes: dataRequest.dataTypes,
+          status: DataRequestStatus.IN_PROGRESS,
+        });
+        await this.delay(this.DEFENSE_STEP_DELAY_MS);
+      }
       const deliveryReceipt = await this.deliverDataToHospital(
         sourceHospital,
         responseData,
@@ -248,6 +448,7 @@ export class DataRequestService {
         where: { id: dataRequest.id },
         data: {
           status: DataRequestStatus.COMPLETED,
+          failureReason: null,
           responseData: JSON.stringify(routedData),
           consentRecordId,
           completedAt: new Date(),
@@ -276,6 +477,16 @@ export class DataRequestService {
       if (consentId && consentId !== 'consent_from_check') {
         await this.consentService.recordConsentAccess(consentId, sourceHospital.id);
       }
+
+      this.defenseService.emit('data_request_completed', {
+        dataRequestId: updatedRequest.id,
+        patientId: patient.id,
+        sourceHospitalId: sourceHospital.id,
+        targetHospitalId: targetHospital.id,
+        dataTypes: dataRequest.dataTypes,
+        status: DataRequestStatus.COMPLETED,
+        latencyMs,
+      });
 
       return this.mapDataRequestToResponse(updatedRequest);
     } catch (error) {
@@ -321,6 +532,17 @@ export class DataRequestService {
           error: failureReason,
           latencyMs,
         }),
+      });
+
+      this.defenseService.emit('data_request_failed', {
+        dataRequestId: updatedRequest.id,
+        patientId: dataRequest.patientId,
+        sourceHospitalId: sourceHospital.id,
+        targetHospitalId: targetHospital.id,
+        dataTypes: dataRequest.dataTypes,
+        status,
+        failureReason,
+        latencyMs,
       });
 
       throw error;
@@ -648,6 +870,15 @@ export class DataRequestService {
       consentId: request.consentRecordId,
       latencyMs: request.latencyMs,
     };
+  }
+
+  private isDefenseDemoRequest(dataRequest: any): boolean {
+    return String(dataRequest?.purpose || '').toLowerCase().includes('defense demo');
+  }
+
+  private delay(ms: number) {
+    if (!ms || ms <= 0) return Promise.resolve();
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private parseResponseData(responseData: any): any {

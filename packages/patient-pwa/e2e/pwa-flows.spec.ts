@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { installAuthedBootstrapMocks, installUnauthedBootstrapMocks } from './helpers';
 
 type LoginResponse = {
   accessToken: string;
@@ -47,8 +48,6 @@ async function fulfillPreflight(route: any) {
 
 async function seedAuthStorage(page: Page) {
   await page.addInitScript((payload) => {
-    localStorage.setItem('carebridge_access_token', payload.accessToken);
-    localStorage.setItem('carebridge_refresh_token', payload.refreshToken);
     localStorage.setItem(
       'carebridge_user',
       JSON.stringify({
@@ -58,17 +57,15 @@ async function seedAuthStorage(page: Page) {
         firstName: payload.patient.firstName,
         lastName: payload.patient.lastName,
         externalId: payload.patient.externalId,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-        expiresIn: payload.expiresIn,
-        tokenType: payload.tokenType,
       }),
     );
   }, mockLogin);
 }
 
 test('Login → Dashboard → view ID', async ({ page }) => {
+  await installUnauthedBootstrapMocks(page);
   await page.route('**/api/v1/patients/login', async (route) => {
+    if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -90,6 +87,7 @@ test('Login → Dashboard → view ID', async ({ page }) => {
 
 test('Consent Inbox → Approve Request → back to Inbox', async ({ page }) => {
   await seedAuthStorage(page);
+  await installAuthedBootstrapMocks(page);
 
   let approved = false;
   await page.route('**/api/v1/consent/requests/pending', async (route) => {
@@ -152,6 +150,7 @@ test('Consent Inbox → Approve Request → back to Inbox', async ({ page }) => 
 
 test('Consent History revoke + Settings session management', async ({ page, context }) => {
   await seedAuthStorage(page);
+  await installAuthedBootstrapMocks(page);
 
   await page.route('**/api/v1/consent/records', async (route) => {
     if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
@@ -287,6 +286,7 @@ test('Consent History revoke + Settings session management', async ({ page, cont
 });
 
 test('Password reset link sets a new password', async ({ page }) => {
+  await installUnauthedBootstrapMocks(page);
   await page.route('**/api/v1/patients/password-reset/confirm', async (route) => {
     if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
     await route.fulfill({

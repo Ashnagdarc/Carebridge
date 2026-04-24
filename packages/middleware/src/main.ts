@@ -5,6 +5,7 @@ import helmet from 'helmet';
 import { WsAdapter } from '@nestjs/platform-ws';
 import type { NextFunction, Request, Response } from 'express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -39,6 +40,9 @@ async function bootstrap() {
     }),
   );
 
+  // Cookies (for httpOnly auth cookies)
+  app.use(cookieParser());
+
   // Disable X-Powered-By header (Express)
   if (httpInstance && typeof httpInstance.disable === 'function') {
     httpInstance.disable('x-powered-by');
@@ -72,7 +76,7 @@ async function bootstrap() {
       if (allowedOrigins.includes(origin)) return callback(null, true);
       return callback(new Error(`CORS origin not allowed: ${origin}`), false);
     },
-    credentials: false,
+    credentials: true,
     methods: ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     optionsSuccessStatus: 204,

@@ -1,5 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { expectNoHorizontalOverflow, installDefaultApiMocks, seedAuthStorage } from './helpers';
+import {
+  expectNoHorizontalOverflow,
+  installDefaultApiMocks,
+  installUnauthedBootstrapMocks,
+  seedAuthStorage,
+} from './helpers';
 
 async function attachScreenshot(page: any, name: string) {
   await test.info().attach(name, {
@@ -14,6 +19,7 @@ async function assertNoHorizontalOverflow(page: any) {
 }
 
 test('Typography + base layout (public)', async ({ page }) => {
+  await installUnauthedBootstrapMocks(page);
   await page.goto('/');
   await expect(page.getByRole('link', { name: 'Skip to main content' })).toBeVisible();
 
@@ -25,6 +31,7 @@ test('Typography + base layout (public)', async ({ page }) => {
 });
 
 test('Landing CTA: Get Started routes to signup', async ({ page }) => {
+  await installUnauthedBootstrapMocks(page);
   await page.goto('/');
   await Promise.all([
     page.waitForURL(/\/signup$/),
@@ -36,6 +43,7 @@ test.describe('Dark mode', () => {
   test.use({ colorScheme: 'dark' });
 
   test('Form input text is readable while typing', async ({ page }) => {
+    await installUnauthedBootstrapMocks(page);
     await page.goto('/signup');
     const input = page.getByLabel('Confirm Password');
     await input.click();
@@ -52,6 +60,7 @@ test.describe('Dark mode', () => {
 });
 
 test('Auth pages: navigation + tap targets', async ({ page }) => {
+  await installUnauthedBootstrapMocks(page);
   await page.goto('/login');
   await expect(page.getByRole('heading', { name: 'Welcome Back' })).toBeVisible();
 

@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
 } from '@nestjs/common';
+import { Inject, forwardRef } from '@nestjs/common';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import {
   CreateConsentRequestDto,
@@ -14,12 +15,17 @@ import {
   ConsentRecordResponseDto,
 } from './dto/consent.dto';
 import { NotificationsService } from '@modules/notifications/notifications.service';
+import { DataRequestService } from '@modules/data-request/data-request.service';
+import { DefenseService } from '@modules/defense/defense.service';
 
 @Injectable()
 export class ConsentService {
   constructor(
     private prisma: PrismaService,
     private notificationsService: NotificationsService,
+    private defenseService: DefenseService,
+    @Inject(forwardRef(() => DataRequestService))
+    private dataRequestService: DataRequestService,
   ) {}
 
   /**
@@ -101,7 +107,32 @@ export class ConsentService {
       },
     });
 
+    this.defenseService.emit('consent_request_created', {
+      consentRequestId: consentRequest.id,
+      patientId: consentRequest.patientId,
+      sourceHospitalId: consentRequest.requestingHospitalId,
+      dataTypes: (consentRequest.dataType || '')
+        .split(',')
+        .map((scope) => scope.trim())
+        .filter(Boolean),
+      status: 'pending',
+    });
+
     return this.mapConsentRequestToResponse(consentRequest);
+  }
+
+  async assertConsentRequestBelongsToPatient(
+    consentRequestId: string,
+    patientId: string,
+  ): Promise<void> {
+    const request = await this.prisma.consentRequest.findUnique({
+      where: { id: consentRequestId },
+      select: { patientId: true },
+    });
+
+    if (!request || request.patientId !== patientId) {
+      throw new BadRequestException('Consent request not found for this patient');
+    }
   }
 
   /**
@@ -176,6 +207,19 @@ export class ConsentService {
       },
     });
 
+    this.defenseService.emit('consent_approved', {
+      consentRequestId,
+      patientId: consentRequest.patientId,
+      sourceHospitalId: consentRequest.requestingHospitalId,
+      dataTypes: (consentRequest.dataType || '')
+        .split(',')
+        .map((scope) => scope.trim())
+        .filter(Boolean),
+      status: 'approved',
+    });
+
+    await this.dataRequestService.resumePendingRequestsForConsent(consentRequestId);
+
     return this.mapConsentRequestToResponse(updated);
   }
 
@@ -221,6 +265,22 @@ export class ConsentService {
           select: { id: true, name: true, code: true },
         },
       },
+    });
+
+    await this.dataRequestService.failPendingRequestsForConsent(
+      consentRequestId,
+      'Consent request denied by patient',
+    );
+
+    this.defenseService.emit('consent_denied', {
+      consentRequestId,
+      patientId: consentRequest.patientId,
+      sourceHospitalId: consentRequest.requestingHospitalId,
+      dataTypes: (consentRequest.dataType || '')
+        .split(',')
+        .map((scope) => scope.trim())
+        .filter(Boolean),
+      status: 'denied',
     });
 
     return this.mapConsentRequestToResponse(updated);

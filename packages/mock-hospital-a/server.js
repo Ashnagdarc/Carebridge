@@ -52,11 +52,22 @@ function pickDataTypes(record, dataTypes) {
 }
 
 function buildPatientDataResponse(patientId, requestedDataTypes) {
-  const record = sampleRecords[patientId];
-
-  if (!record) {
-    return null;
-  }
+  const record =
+    sampleRecords[patientId] ||
+    {
+      allergies: [
+        { substance: 'Unknown allergen', severity: 'low', reaction: 'Mild irritation' },
+      ],
+      medications: [
+        { name: 'Follow-up medication', dosage: '10mg', frequency: 'daily' },
+      ],
+      diagnoses: [
+        { code: 'Z00.00', description: 'General adult medical examination' },
+      ],
+      lab_results: [
+        { name: 'CBC', value: 'normal', unit: '', collectedAt: '2026-04-01' },
+      ],
+    };
 
   const requestedTypes = String(requestedDataTypes || '')
     .split(',')
@@ -77,18 +88,23 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'mock-hospital-a' });
 });
 
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'mock-hospital-a',
+    status: 'ok',
+    docs: {
+      health: 'GET /health',
+      patientData: 'GET /api/v1/patient-data/:patientId?dataTypes=allergies,medications',
+      auth: 'Authorization: Bearer mock-hospital-token',
+    },
+  });
+});
+
 app.get('/api/v1/patient-data/:patientId', requireBearerToken, (req, res) => {
   const response = buildPatientDataResponse(
     req.params.patientId,
     req.query.dataTypes,
   );
-
-  if (!response) {
-    return res.status(404).json({
-      error: 'not_found',
-      message: `Patient ${req.params.patientId} not found`,
-    });
-  }
 
   return res.json(response);
 });

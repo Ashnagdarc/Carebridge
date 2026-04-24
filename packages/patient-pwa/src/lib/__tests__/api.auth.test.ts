@@ -19,6 +19,7 @@ describe("Auth API password reset", () => {
       expect.stringContaining("/patients/password-reset/request"),
       expect.objectContaining({
         method: "POST",
+        credentials: "include",
         body: JSON.stringify({ email: "patient@example.com" }),
       })
     );
@@ -39,6 +40,7 @@ describe("Auth API password reset", () => {
       expect.stringContaining("/patients/password-reset/confirm"),
       expect.objectContaining({
         method: "POST",
+        credentials: "include",
         body: JSON.stringify({
           token: "reset-token",
           newPassword: "NewPassword123",

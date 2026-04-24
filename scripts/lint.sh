@@ -17,7 +17,7 @@ else
 fi
 
 FAILED=0
-for service in middleware patient-pwa mock-hospital-a mock-hospital-b; do
+for service in middleware patient-pwa defense-dashboard mock-hospital-a mock-hospital-b; do
   if [ -d "$PROJECT_ROOT/packages/$service" ]; then
     echo ""
     echo -e "${GREEN}Linting $service...${NC}"

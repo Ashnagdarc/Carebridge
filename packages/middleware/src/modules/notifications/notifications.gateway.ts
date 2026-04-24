@@ -38,7 +38,7 @@ export class NotificationsGateway
       }
 
       const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET || 'dev_jwt_secret_key',
+        secret: process.env.JWT_SECRET,
       }) as { patientId?: string; type?: string };
 
       if (!payload?.patientId || payload.type !== 'patient') {

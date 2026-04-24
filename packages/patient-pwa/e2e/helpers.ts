@@ -45,10 +45,63 @@ async function fulfillPreflight(route: Route) {
   });
 }
 
+type ProfileMockMode = 'authed' | 'unauthed';
+
+async function installProfileMocks(page: Page, mode: ProfileMockMode) {
+  await page.route('**/api/v1/patients/profile', async (route) => {
+    if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
+    const method = route.request().method();
+
+    if (mode === 'unauthed') {
+      // Make auth bootstrap fast: the app should clear session and render public pages.
+      await route.fulfill({
+        status: 401,
+        contentType: 'application/json',
+        headers: withCorsHeaders(),
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      });
+      return;
+    }
+
+    if (method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: withCorsHeaders(),
+        body: JSON.stringify({
+          id: mockLogin.patient.id,
+          email: mockLogin.patient.email,
+          firstName: mockLogin.patient.firstName,
+          lastName: mockLogin.patient.lastName,
+          externalId: mockLogin.patient.externalId,
+        }),
+      });
+      return;
+    }
+
+    if (method === 'PUT') {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        headers: withCorsHeaders(),
+        body: JSON.stringify({
+          id: mockLogin.patient.id,
+          email: mockLogin.patient.email,
+          firstName: 'Updated',
+          lastName: 'User',
+          externalId: mockLogin.patient.externalId,
+        }),
+      });
+      return;
+    }
+
+    return route.fallback();
+  });
+}
+
 export async function seedAuthStorage(page: Page) {
   await page.addInitScript((payload) => {
-    localStorage.setItem('carebridge_access_token', payload.accessToken);
-    localStorage.setItem('carebridge_refresh_token', payload.refreshToken);
+    // Cookie-auth: seed only cached user profile, never tokens.
     localStorage.setItem(
       'carebridge_user',
       JSON.stringify({
@@ -58,18 +111,25 @@ export async function seedAuthStorage(page: Page) {
         firstName: payload.patient.firstName,
         lastName: payload.patient.lastName,
         externalId: payload.patient.externalId,
-        accessToken: payload.accessToken,
-        refreshToken: payload.refreshToken,
-        expiresIn: payload.expiresIn,
-        tokenType: payload.tokenType,
       }),
     );
   }, mockLogin);
 }
 
+export async function installUnauthedBootstrapMocks(page: Page) {
+  await installProfileMocks(page, 'unauthed');
+}
+
+export async function installAuthedBootstrapMocks(page: Page) {
+  await installProfileMocks(page, 'authed');
+}
+
 export async function installDefaultApiMocks(page: Page) {
   const now = new Date();
   const future = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+
+  // Auth bootstrap (cookie session)
+  await installAuthedBootstrapMocks(page);
 
   await page.route('**/api/v1/consent/requests/pending', async (route) => {
     if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
@@ -215,49 +275,6 @@ export async function installDefaultApiMocks(page: Page) {
     if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
     if (route.request().method() !== 'DELETE') return route.fallback();
     await route.fulfill({ status: 204, headers: withCorsHeaders(), body: '' });
-  });
-
-  await page.route('**/api/v1/patients/profile', async (route) => {
-    if (route.request().method() === 'OPTIONS') return fulfillPreflight(route);
-    const method = route.request().method();
-
-    if (method === 'GET') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: withCorsHeaders(),
-        body: JSON.stringify({
-          id: mockLogin.patient.id,
-          email: mockLogin.patient.email,
-          firstName: mockLogin.patient.firstName,
-          lastName: mockLogin.patient.lastName,
-          externalId: mockLogin.patient.externalId,
-        }),
-      });
-      return;
-    }
-
-    if (method === 'PUT') {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        headers: withCorsHeaders(),
-        body: JSON.stringify({
-          accessToken: mockLogin.accessToken,
-          refreshToken: mockLogin.refreshToken,
-          expiresIn: mockLogin.expiresIn,
-          tokenType: mockLogin.tokenType,
-          patient: {
-            ...mockLogin.patient,
-            firstName: 'Updated',
-            lastName: 'User',
-          },
-        }),
-      });
-      return;
-    }
-
-    return route.fallback();
   });
 
   await page.route('**/api/v1/patients/logout', async (route) => {

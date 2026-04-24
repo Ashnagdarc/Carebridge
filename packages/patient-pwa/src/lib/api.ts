@@ -30,8 +30,6 @@ interface ApiResponse<T> {
 }
 
 interface BackendPatientAuthResponse {
-  accessToken: string;
-  refreshToken?: string;
   expiresIn: number;
   tokenType: string;
   patient: {
@@ -182,10 +180,17 @@ function mapPatientAuthResponse(response: BackendPatientAuthResponse): PatientAu
     firstName: patient.firstName,
     lastName: patient.lastName,
     externalId: patient.externalId,
-    accessToken: response.accessToken,
-    refreshToken: response.refreshToken || '',
-    expiresIn: response.expiresIn,
-    tokenType: response.tokenType,
+  };
+}
+
+function mapPatientProfile(profile: BackendPatientProfile): PatientAuthResponse {
+  return {
+    id: profile.id,
+    email: profile.email,
+    name: `${profile.firstName} ${profile.lastName}`.trim(),
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    externalId: profile.externalId,
   };
 }
 
@@ -300,6 +305,7 @@ export const authApi = {
     const { firstName, lastName } = splitFullName(data.name);
     const response = await safeFetch(`${API_URL}/patients/signup`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -319,18 +325,17 @@ export const authApi = {
       await response.json()
     );
 
-    if (result && typeof result === 'object' && 'accessToken' in result) {
+    // Cookie-auth: backend sets httpOnly cookies; frontend only needs the patient profile.
+    if (result && typeof result === 'object' && 'patient' in result) {
       return mapPatientAuthResponse(result as BackendPatientAuthResponse);
     }
-
-    // Backend signup can return only a profile (no tokens). Ensure the frontend has tokens
-    // by performing an immediate login.
-    return this.login({ email: data.email, password: data.password });
+    return mapPatientProfile(result as BackendPatientProfile);
   },
 
   async login(credentials: LoginRequest): Promise<PatientAuthResponse> {
     const response = await safeFetch(`${API_URL}/patients/login`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -345,23 +350,41 @@ export const authApi = {
     return mapPatientAuthResponse(result);
   },
 
-  async logout(token: string): Promise<void> {
+  async logout(): Promise<void> {
     await fetch(`${API_URL}/patients/logout`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
   },
 
+  async getProfile(): Promise<PatientAuthResponse> {
+    const response = await safeFetch(
+      `${API_URL}/patients/profile`,
+      {
+        method: 'GET',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      },
+      'Failed to fetch profile',
+    );
+
+    if (!response.ok) {
+      throw await readError(response, 'Failed to fetch profile');
+    }
+
+    const result = unwrapResponse<BackendPatientProfile>(await response.json());
+    return mapPatientProfile(result);
+  },
+
   async updateProfile(data: UpdateProfileRequest): Promise<PatientAuthResponse> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/patients/profile`, {
       method: 'PUT',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -370,17 +393,16 @@ export const authApi = {
       throw await readError(response, 'Profile update failed');
     }
 
-    const result = unwrapResponse<BackendPatientAuthResponse>(await response.json());
-    return mapPatientAuthResponse(result);
+    const result = unwrapResponse<BackendPatientProfile>(await response.json());
+    return mapPatientProfile(result);
   },
 
   async changePassword(data: ChangePasswordRequest): Promise<void> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/patients/password`, {
       method: 'PUT',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(data),
     });
@@ -393,6 +415,7 @@ export const authApi = {
   async requestPasswordReset(data: RequestPasswordResetRequest): Promise<void> {
     const response = await safeFetch(`${API_URL}/patients/password-reset/request`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -407,6 +430,7 @@ export const authApi = {
   async confirmPasswordReset(data: ConfirmPasswordResetRequest): Promise<void> {
     const response = await safeFetch(`${API_URL}/patients/password-reset/confirm`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
       },
@@ -418,19 +442,12 @@ export const authApi = {
     }
   },
 
-  getToken(): string {
-    if (typeof window === 'undefined') return '';
-    const stored = localStorage.getItem('carebridge_access_token');
-    return stored || '';
-  },
-
   async signOutAll(): Promise<void> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/patients/sessions/logout-all`, {
       method: 'POST',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -440,12 +457,11 @@ export const authApi = {
   },
 
   async deleteAccount(): Promise<void> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/patients/account`, {
       method: 'DELETE',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -455,12 +471,11 @@ export const authApi = {
   },
 
   async getSessions(): Promise<PatientSessionListResponse> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/patients/sessions`, {
       method: 'GET',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -481,12 +496,11 @@ export const authApi = {
   },
 
   async revokeSession(sessionId: string): Promise<void> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/patients/sessions/${sessionId}`, {
       method: 'DELETE',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -500,19 +514,12 @@ export const authApi = {
  * Consent API operations
  */
 export const consentApi = {
-  getToken(): string {
-    if (typeof window === 'undefined') return '';
-    const stored = localStorage.getItem('carebridge_access_token');
-    return stored || '';
-  },
-
   async getPendingRequests(): Promise<ConsentRequest[]> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/consent/requests/pending`, {
       method: 'GET',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -528,12 +535,11 @@ export const consentApi = {
   },
 
   async getActiveConsents(): Promise<ConsentRecord[]> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/consent/records`, {
       method: 'GET',
+      credentials: 'include',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -552,7 +558,6 @@ export const consentApi = {
     consentRequestId: string,
     expiryDays: number | 'indefinite'
   ): Promise<ConsentRequest> {
-    const token = this.getToken();
     const body =
       expiryDays === 'indefinite'
         ? { indefinite: true }
@@ -561,9 +566,9 @@ export const consentApi = {
       `${API_URL}/consent/requests/${consentRequestId}/approve`,
       {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(body),
       }
@@ -578,14 +583,13 @@ export const consentApi = {
   },
 
   async denyConsentRequest(consentRequestId: string, reason?: string): Promise<void> {
-    const token = this.getToken();
     const response = await fetch(
       `${API_URL}/consent/requests/${consentRequestId}/deny`,
       {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ reason }),
       }
@@ -597,14 +601,13 @@ export const consentApi = {
   },
 
   async revokeConsent(consentRecordId: string): Promise<void> {
-    const token = this.getToken();
     const response = await fetch(
       `${API_URL}/consent/records/${consentRecordId}`,
       {
         method: 'DELETE',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -621,7 +624,6 @@ export const consentApi = {
     take: number;
     hasMore: boolean;
   }> {
-    const token = this.getToken();
     const params = new URLSearchParams({
       skip: String(skip),
       take: String(take),
@@ -631,9 +633,9 @@ export const consentApi = {
       `${API_URL}/audit/patient-logs?${params.toString()}`,
       {
         method: 'GET',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
         },
       }
     );
@@ -655,12 +657,11 @@ export const consentApi = {
   },
 
   async getHospitals(): Promise<HospitalInfo[]> {
-    const token = this.getToken();
     const response = await fetch(`${API_URL}/hospitals`, {
       method: "GET",
+      credentials: 'include',
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
     });
 

@@ -98,7 +98,7 @@ function SettingsContent() {
       await authApi.updateProfile(updateData);
       triggerHaptic();
       addToast("Profile updated successfully", "success");
-    } catch (error) {
+    } catch {
       addToast("Failed to update profile", "error");
     } finally {
       setLoading(false);
@@ -125,7 +125,7 @@ function SettingsContent() {
         newPassword: "",
         confirmPassword: "",
       });
-    } catch (error) {
+    } catch {
       addToast("Failed to change password", "error");
     } finally {
       setLoading(false);
@@ -152,7 +152,7 @@ function SettingsContent() {
       addToast("Signed out of all devices", "success");
       logout();
       router.push("/login");
-    } catch (error) {
+    } catch {
       addToast("Failed to sign out", "error");
     } finally {
       setLoading(false);
@@ -171,7 +171,7 @@ function SettingsContent() {
       addToast("Account deleted", "success");
       logout();
       router.push("/login");
-    } catch (error) {
+    } catch {
       addToast("Failed to delete account", "error");
     } finally {
       setLoading(false);
@@ -201,7 +201,7 @@ function SettingsContent() {
       triggerHaptic();
       addToast("Session signed out", "success");
       await loadSessions();
-    } catch (error) {
+    } catch {
       addToast("Failed to sign out session", "error");
       setSessionsLoading(false);
     }

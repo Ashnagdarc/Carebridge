@@ -163,6 +163,12 @@ describe('Data request consent-to-routing integration', () => {
             store.consentRecords.find((record) => record.id === where.id) || null,
           ),
         ),
+        findFirst: jest.fn(({ where, select }) => {
+          const match = store.consentRecords.find((record) => matchWhere(record, where)) || null;
+          if (!match) return Promise.resolve(null);
+          if (select && select.id) return Promise.resolve({ id: match.id });
+          return Promise.resolve(match);
+        }),
         findMany: jest.fn(({ where }) =>
           Promise.resolve(store.consentRecords.filter((record) => matchWhere(record, where))),
         ),
@@ -198,6 +204,18 @@ describe('Data request consent-to-routing integration', () => {
 
           return Promise.resolve(dataRequest);
         }),
+        findUnique: jest.fn(({ where }) =>
+          Promise.resolve(
+            store.dataRequests.find((request) => request.id === where.id) || null,
+          ),
+        ),
+        findMany: jest.fn(({ where, select }) => {
+          const results = store.dataRequests.filter((request) => matchWhere(request, where));
+          if (select && select.id) {
+            return Promise.resolve(results.map((r) => ({ id: r.id })));
+          }
+          return Promise.resolve(results);
+        }),
         update: jest.fn(({ where, data }) => {
           const index = store.dataRequests.findIndex(
             (request) => request.id === where.id,
@@ -230,6 +248,7 @@ describe('Data request consent-to-routing integration', () => {
   it('creates pending consent, approves it, then fetches and delivers patient data', async () => {
     const prisma = createInMemoryPrisma();
     const notificationsService = { notifyPatient: jest.fn() };
+    const defenseService = { emit: jest.fn() };
     const httpService = {
       get: jest.fn().mockReturnValue(
         of({
@@ -254,14 +273,21 @@ describe('Data request consent-to-routing integration', () => {
       ),
     };
 
-    const consentService = new ConsentService(prisma as any, notificationsService as any);
+    const consentService = new ConsentService(
+      prisma as any,
+      notificationsService as any,
+      defenseService as any,
+      { resumePendingRequestsForConsent: jest.fn() } as any,
+    );
     const auditService = new AuditService(prisma as any);
     const dataRequestService = new DataRequestService(
       prisma as any,
       consentService,
       auditService,
       httpService as any,
+      defenseService as any,
     );
+    (consentService as any).dataRequestService = dataRequestService;
 
     const initialRequest = await dataRequestService.createDataRequest(
       {

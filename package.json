@@ -11,6 +11,7 @@
   "scripts": {
     "setup": "./scripts/setup.sh",
     "dev": "./scripts/dev.sh",
+    "dev:defense-dashboard": "npm --prefix packages/defense-dashboard run dev",
     "build": "./scripts/build.sh",
     "test": "./scripts/test.sh",
     "lint": "./scripts/lint.sh",

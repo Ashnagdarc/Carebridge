@@ -29,34 +29,30 @@
     --radius: 0.5rem;
   }
 
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --background: 222.2 84% 4.9%;
-      --foreground: 210 40% 98%;
-      --card: 222.2 84% 4.9%;
-      --card-foreground: 210 40% 98%;
-      --popover: 222.2 84% 4.9%;
-      --popover-foreground: 210 40% 98%;
-      --primary: 210 40% 98%;
-      --primary-foreground: 222.2 47.4% 11.2%;
-      --secondary: 240 4% 12%;
-      --secondary-foreground: 210 40% 98%;
-      --muted: 240 3% 18%;
-      --muted-foreground: 215 20.2% 65.1%;
-      --accent: 240 3% 18%;
-      --accent-foreground: 210 40% 98%;
-      --destructive: 0 62.8% 30.6%;
-      --destructive-foreground: 210 40% 98%;
-      --border: 240 2% 23%;
-      --input: 240 2% 23%;
-      --ring: 212.7 26.8% 83.9%;
-      --tertiary: 240 2% 23%;
-      --quaternary: 240 2% 36%;
-    }
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 4% 12%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 240 3% 18%;
+    --muted-foreground: 215 20.2% 65.1%;
+    --accent: 240 3% 18%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 240 2% 23%;
+    --input: 240 2% 23%;
+    --ring: 212.7 26.8% 83.9%;
+    --tertiary: 240 2% 23%;
+    --quaternary: 240 2% 36%;
   }
-}
 
-@layer base {
   * {
     border-color: hsl(var(--border));
   }
@@ -66,11 +62,32 @@
   }
 }
 
+@keyframes theme-reveal {
+  from {
+    clip-path: circle(0% at var(--vt-x) var(--vt-y));
+  }
+  to {
+    clip-path: circle(var(--vt-r) at var(--vt-x) var(--vt-y));
+  }
+}
+
+::view-transition-new(root) {
+  animation: theme-reveal 500ms ease-in-out;
+}
+
+::view-transition-old(root) {
+  animation: none;
+}
+
 /* Base Styles */
 html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  color-scheme: light dark;
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {

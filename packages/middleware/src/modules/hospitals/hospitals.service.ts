@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
+import { randomBytes, randomUUID } from 'crypto';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { HospitalRegisterDto, HospitalLoginDto, HospitalAuthResponseDto } from '@modules/auth/dto/hospital-auth.dto';
 
@@ -157,10 +158,10 @@ export class HospitalsService {
   }
 
   private generateClientId(): string {
-    return `hosp_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    return `hosp_${randomUUID()}`;
   }
 
   private generateClientSecret(): string {
-    return `secret_${Math.random().toString(36).substring(2, 32)}_${Math.random().toString(36).substring(2, 32)}`;
+    return `secret_${randomBytes(32).toString('base64url')}`;
   }
 }

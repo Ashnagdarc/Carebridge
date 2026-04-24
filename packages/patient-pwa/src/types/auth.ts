@@ -7,10 +7,6 @@ export interface PatientAuthResponse {
   firstName: string;
   lastName: string;
   externalId: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresIn: number;
-  tokenType: string;
 }
 
 export interface SignupRequest {

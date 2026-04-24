@@ -57,15 +57,7 @@ export class ConsentController {
     @Body() dto: ApproveConsentRequestDto,
     @Request() req: any,
   ) {
-    // Verify patient owns this request
-    const request = await this.consentService['prisma'].consentRequest.findUnique({
-      where: { id },
-    });
-
-    if (!request || request.patientId !== req.user.patientId) {
-      throw new BadRequestException('Consent request not found for this patient');
-    }
-
+    await this.consentService.assertConsentRequestBelongsToPatient(id, req.user.patientId);
     return this.consentService.approveConsentRequest(id, dto);
   }
 
@@ -81,15 +73,7 @@ export class ConsentController {
     @Body() dto: DenyConsentRequestDto,
     @Request() req: any,
   ) {
-    // Verify patient owns this request
-    const request = await this.consentService['prisma'].consentRequest.findUnique({
-      where: { id },
-    });
-
-    if (!request || request.patientId !== req.user.patientId) {
-      throw new BadRequestException('Consent request not found for this patient');
-    }
-
+    await this.consentService.assertConsentRequestBelongsToPatient(id, req.user.patientId);
     return this.consentService.denyConsentRequest(id, dto);
   }
 

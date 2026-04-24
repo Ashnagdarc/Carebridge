@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { installUnauthedBootstrapMocks } from './helpers';
 
 const BASE = process.env.BASE_URL ?? 'http://localhost:3001';
 
 test.describe('RunActionButton visuals', () => {
   test('login: shows idle then running label', async ({ page }) => {
+    await installUnauthedBootstrapMocks(page);
     await page.goto(`${BASE}/login`);
     // intercept API POSTs and delay so animation is visible before navigation
     await page.route('**/api/**', async (route) => {
@@ -36,6 +38,7 @@ test.describe('RunActionButton visuals', () => {
   });
 
   test('signup: shows idle then running label', async ({ page }) => {
+    await installUnauthedBootstrapMocks(page);
     // delay POSTs so animation is visible
     await page.route('**/api/**', async (route) => {
       const req = route.request();
@@ -65,6 +68,7 @@ test.describe('RunActionButton visuals', () => {
   });
 
   test('forgot-password: shows idle then running label', async ({ page }) => {
+    await installUnauthedBootstrapMocks(page);
     await page.goto(`${BASE}/forgot-password`);
     await page.waitForLoadState('networkidle', { timeout: 15000 });
     await page.fill('input[placeholder="you@example.com"]', 'reset@dev.local');

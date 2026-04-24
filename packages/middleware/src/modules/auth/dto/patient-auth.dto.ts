@@ -41,8 +41,9 @@ export class PatientAuthResponseDto {
 }
 
 export class PatientRefreshDto {
+  @IsOptional()
   @IsString()
-  refreshToken: string;
+  refreshToken?: string;
 }
 
 export class UpdatePatientProfileDto {

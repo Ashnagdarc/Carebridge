@@ -2,6 +2,7 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { ThemeSwitch } from "@/components/unlumen-ui/theme-switch";
 
 interface HeaderProps {
   title: string;
@@ -58,11 +59,18 @@ export function Header({
             )}
           </div>
         </div>
-        {action && (
-          <div className={cn("flex shrink-0 items-center gap-1.5 rounded-full border border-tertiary/70 bg-secondary/55 p-1 shadow-sm")}>
-            {action}
-          </div>
-        )}
+        <div className="flex shrink-0 items-center gap-2">
+          <ThemeSwitch />
+          {action && (
+            <div
+              className={cn(
+                "flex shrink-0 items-center gap-1.5 rounded-full border border-tertiary/70 bg-secondary/55 p-1 shadow-sm",
+              )}
+            >
+              {action}
+            </div>
+          )}
+        </div>
       </div>
     </header>
   );

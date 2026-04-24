@@ -70,8 +70,8 @@ export class PatientsService {
     await this.prisma.session.create({
       data: {
         patientId: patient.id,
-        token: accessToken,
-        refreshToken,
+        token: this.hashSessionToken(accessToken),
+        refreshToken: this.hashSessionToken(refreshToken),
         expiresAt: new Date(Date.now() + parseInt(process.env.JWT_EXPIRATION || '86400') * 1000),
       },
     });
@@ -125,8 +125,8 @@ export class PatientsService {
     await this.prisma.session.create({
       data: {
         patientId: patient.id,
-        token: accessToken,
-        refreshToken,
+        token: this.hashSessionToken(accessToken),
+        refreshToken: this.hashSessionToken(refreshToken),
         expiresAt: new Date(Date.now() + parseInt(process.env.JWT_EXPIRATION || '86400') * 1000),
       },
     });
@@ -153,17 +153,18 @@ export class PatientsService {
 
     try {
       // Verify refresh token
-      const decoded = this.jwtService.verify(dto.refreshToken, {
-        secret: process.env.JWT_SECRET || 'dev_jwt_secret_key',
-      });
+      const decoded = this.jwtService.verify(dto.refreshToken);
+      if (decoded?.type !== 'refresh') {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
 
       // Find session
       const session = await this.prisma.session.findUnique({
-        where: { refreshToken: dto.refreshToken },
+        where: { refreshToken: this.hashSessionToken(dto.refreshToken) },
         include: { patient: true },
       });
 
-      if (!session || session.revokedAt) {
+      if (!session || session.revokedAt || session.expiresAt.getTime() <= Date.now()) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
@@ -178,8 +179,8 @@ export class PatientsService {
       await this.prisma.session.update({
         where: { id: session.id },
         data: {
-          token: accessToken,
-          refreshToken,
+          token: this.hashSessionToken(accessToken),
+          refreshToken: this.hashSessionToken(refreshToken),
           expiresAt: new Date(Date.now() + parseInt(process.env.JWT_EXPIRATION || '86400') * 1000),
         },
       });
@@ -206,7 +207,7 @@ export class PatientsService {
     await this.prisma.session.updateMany({
       where: {
         patientId,
-        token,
+        token: this.hashSessionToken(token),
       },
       data: {
         revokedAt: new Date(),
@@ -410,6 +411,7 @@ export class PatientsService {
   }
 
   async listSessions(patientId: string, currentToken?: string) {
+    const currentTokenHash = currentToken ? this.hashSessionToken(currentToken) : undefined;
     const sessions = await this.prisma.session.findMany({
       where: { patientId },
       orderBy: { createdAt: 'desc' },
@@ -439,7 +441,7 @@ export class PatientsService {
         createdAt: session.createdAt,
         updatedAt: session.updatedAt,
         isActive,
-        isCurrent: Boolean(currentToken && session.token === currentToken),
+        isCurrent: Boolean(currentTokenHash && session.token === currentTokenHash),
       };
     });
 
@@ -521,6 +523,10 @@ export class PatientsService {
   }
 
   private hashResetToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private hashSessionToken(token: string): string {
     return createHash('sha256').update(token).digest('hex');
   }
 

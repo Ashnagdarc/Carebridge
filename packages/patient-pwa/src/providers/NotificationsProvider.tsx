@@ -60,7 +60,7 @@ function isConsentRequestCreatedEvent(value: unknown): value is ConsentRequestCr
 export function NotificationsProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
 
   const [unreadConsentRequests, setUnreadConsentRequests] = useState(0);
@@ -157,12 +157,12 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, []);
 
   const connect = useCallback(() => {
-    if (!isAuthenticated || !user?.accessToken) return;
+    if (!isAuthenticated) return;
     if (typeof window === "undefined") return;
 
     const wsPath = process.env.NEXT_PUBLIC_WS_NOTIFICATIONS_PATH || "/ws/notifications";
     const wsBase = process.env.NEXT_PUBLIC_WS_URL || wsOriginFromApi(apiUrl());
-    const url = `${wsBase}${wsPath}?token=${encodeURIComponent(user.accessToken)}`;
+    const url = `${wsBase}${wsPath}`;
 
     try {
       const socket = new WebSocket(url);
@@ -214,17 +214,17 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     } catch (err) {
       console.warn("WebSocket connection failed:", err);
     }
-  }, [addToast, isAuthenticated, pathname, router, user?.accessToken]);
+  }, [addToast, isAuthenticated, pathname, router]);
 
   useEffect(() => {
     disconnect();
-    if (isAuthenticated && user?.accessToken) {
+    if (isAuthenticated) {
       connect();
     }
     return () => {
       disconnect();
     };
-  }, [connect, disconnect, isAuthenticated, user?.accessToken]);
+  }, [connect, disconnect, isAuthenticated]);
 
   const enablePush = useCallback(async () => {
     if (!pushSupported) {
@@ -264,19 +264,18 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       applicationServerKey: urlBase64ToUint8Array(publicKey),
     });
 
-    const token = user?.accessToken || "";
     await fetch(`${apiUrl()}/notifications/push/subscribe`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(subscription),
     });
 
     setPushEnabled(true);
     addToast("Push notifications enabled on this device", "success");
-  }, [addToast, pushSupported, user?.accessToken]);
+  }, [addToast, pushSupported]);
 
   const disablePush = useCallback(async () => {
     if (!pushSupported) {
@@ -294,9 +293,9 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       try {
         await fetch(`${apiUrl()}/notifications/push/unsubscribe`, {
           method: "DELETE",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${user?.accessToken || ""}`,
           },
           body: JSON.stringify({ endpoint: subscription.endpoint }),
         });
@@ -308,7 +307,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
 
     setPushEnabled(false);
     addToast("Push notifications disabled on this device", "info");
-  }, [addToast, pushSupported, user?.accessToken]);
+  }, [addToast, pushSupported]);
 
   const value: NotificationContextValue = {
     unreadConsentRequests,

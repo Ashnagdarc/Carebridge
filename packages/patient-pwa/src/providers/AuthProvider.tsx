@@ -13,8 +13,6 @@ export const AuthContext = createContext<AuthContextType | undefined>(
   undefined,
 );
 
-const STORAGE_KEY_ACCESS_TOKEN = "carebridge_access_token";
-const STORAGE_KEY_REFRESH_TOKEN = "carebridge_refresh_token";
 const STORAGE_KEY_USER = "carebridge_user";
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -23,25 +21,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<PatientAuthResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Initialize auth state from localStorage
+  // Initialize auth state from server-side session (httpOnly cookies).
+  // We cache the user profile locally for fast hydration, but never store tokens in the browser.
   useEffect(() => {
     const initAuth = () => {
       try {
         const storedUser = localStorage.getItem(STORAGE_KEY_USER);
-        const accessToken = localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
-
-        if (storedUser && accessToken) {
+        if (storedUser) {
           const parsedUser = JSON.parse(storedUser);
           setUser(parsedUser);
-          setIsAuthenticated(true);
         }
       } catch (err) {
         console.error("Failed to restore auth state:", err);
         localStorage.removeItem(STORAGE_KEY_USER);
-        localStorage.removeItem(STORAGE_KEY_ACCESS_TOKEN);
-        localStorage.removeItem(STORAGE_KEY_REFRESH_TOKEN);
       } finally {
-        setIsLoading(false);
+        // After local hydration, verify session with backend.
+        authApi
+          .getProfile()
+          .then((profile) => {
+            setUser(profile);
+            setIsAuthenticated(true);
+            localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(profile));
+          })
+          .catch(() => {
+            // No active session
+            setUser(null);
+            setIsAuthenticated(false);
+            localStorage.removeItem(STORAGE_KEY_USER);
+          })
+          .finally(() => setIsLoading(false));
       }
     };
 
@@ -54,12 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await authApi.login(credentials);
-
-      // Store tokens and user data
-      localStorage.setItem(STORAGE_KEY_ACCESS_TOKEN, response.accessToken);
-      localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, response.refreshToken);
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(response));
-
       setUser(response);
       setIsAuthenticated(true);
     } catch (err) {
@@ -77,10 +80,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await authApi.signup(data);
-
-      // Store tokens and user data
-      localStorage.setItem(STORAGE_KEY_ACCESS_TOKEN, response.accessToken);
-      localStorage.setItem(STORAGE_KEY_REFRESH_TOKEN, response.refreshToken);
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(response));
 
       setUser(response);
@@ -95,15 +94,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    const accessToken = localStorage.getItem(STORAGE_KEY_ACCESS_TOKEN);
-    if (accessToken) {
-      authApi.logout(accessToken).catch((err) => {
-        console.error("Logout API call failed:", err);
-      });
-    }
+    authApi.logout().catch((err) => {
+      console.error("Logout API call failed:", err);
+    });
 
-    localStorage.removeItem(STORAGE_KEY_ACCESS_TOKEN);
-    localStorage.removeItem(STORAGE_KEY_REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEY_USER);
 
     setUser(null);

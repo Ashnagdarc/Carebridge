@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { NotificationsProvider } from "@/providers/NotificationsProvider";
+import { ThemeProvider } from "@/providers/theme-provider";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -78,15 +79,17 @@ export default function RootLayout({
         <a href="#main-content" className="skip-to-main">
           Skip to main content
         </a>
-        <ToastProvider>
-          <AuthProvider>
-            <NotificationsProvider>
-              <div id="main-content" role="main" className="min-h-screen">
-                {children}
-              </div>
-            </NotificationsProvider>
-          </AuthProvider>
-        </ToastProvider>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <ToastProvider>
+            <AuthProvider>
+              <NotificationsProvider>
+                <div id="main-content" role="main" className="min-h-screen">
+                  {children}
+                </div>
+              </NotificationsProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

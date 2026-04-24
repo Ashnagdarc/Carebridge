@@ -5,8 +5,11 @@ import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { EmailService } from '../email/email.service';
+import { createHash } from 'crypto';
 
 jest.mock('bcryptjs');
+
+const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
 describe('PatientsService', () => {
   let service: PatientsService;
@@ -106,7 +109,14 @@ describe('PatientsService', () => {
       expect(result.tokenType).toBe('Bearer');
       expect(result.patient.email).toBe(signupDto.email);
       expect(prismaService.patient.create).toHaveBeenCalled();
-      expect(prismaService.session.create).toHaveBeenCalled();
+      expect(prismaService.session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            token: hashToken('access_token_jwt'),
+            refreshToken: hashToken('refresh_token_jwt'),
+          }),
+        }),
+      );
     });
 
     it('should normalize signup email before lookup and create', async () => {
@@ -203,7 +213,14 @@ describe('PatientsService', () => {
 
       expect(result.accessToken).toBe('access_token_jwt');
       expect(result.patient.email).toBe(loginDto.email);
-      expect(prismaService.session.create).toHaveBeenCalled();
+      expect(prismaService.session.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            token: hashToken('access_token_jwt'),
+            refreshToken: hashToken('refresh_token_jwt'),
+          }),
+        }),
+      );
     });
 
     it('should normalize login email before lookup', async () => {
@@ -278,7 +295,7 @@ describe('PatientsService', () => {
 
       expect(prismaService.session.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: { patientId, token },
+          where: { patientId, token: hashToken(token) },
           data: expect.objectContaining({
             revokedAt: expect.any(Date),
           }),
@@ -502,7 +519,7 @@ describe('PatientsService', () => {
       prismaService.session.findMany.mockResolvedValue([
         {
           id: 'sess_1',
-          token: 'access_1',
+          token: hashToken('access_1'),
           expiresAt: new Date(now + 1000),
           revokedAt: null,
           ipAddress: '127.0.0.1',
@@ -512,7 +529,7 @@ describe('PatientsService', () => {
         },
         {
           id: 'sess_2',
-          token: 'access_2',
+          token: hashToken('access_2'),
           expiresAt: new Date(now - 1000),
           revokedAt: null,
           ipAddress: null,
@@ -522,7 +539,7 @@ describe('PatientsService', () => {
         },
         {
           id: 'sess_3',
-          token: 'access_3',
+          token: hashToken('access_3'),
           expiresAt: new Date(now + 1000),
           revokedAt: new Date(now - 10),
           ipAddress: null,
@@ -589,8 +606,8 @@ describe('PatientsService', () => {
       const session = {
         id: 'session_1',
         patientId: 'pat_uuid_1',
-        token: 'old_access_token',
-        refreshToken,
+        token: hashToken('old_access_token'),
+        refreshToken: hashToken(refreshToken),
         expiresAt: new Date(Date.now() + 86400000),
         revokedAt: null,
         patient: {
@@ -620,9 +637,18 @@ describe('PatientsService', () => {
       const result = await service.refresh({ refreshToken });
 
       expect(result.accessToken).toBe('new_access_token');
-      expect(result.refreshToken).toBe('new_refresh_token');      expect(prismaService.session.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { refreshToken } }),
-      );      expect(prismaService.session.update).toHaveBeenCalled();
+      expect(result.refreshToken).toBe('new_refresh_token');
+      expect(prismaService.session.findUnique).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { refreshToken: hashToken(refreshToken) } }),
+      );
+      expect(prismaService.session.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            token: hashToken('new_access_token'),
+            refreshToken: hashToken('new_refresh_token'),
+          }),
+        }),
+      );
     });
 
     it('should reject invalid refresh token', async () => {

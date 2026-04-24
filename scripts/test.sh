@@ -11,7 +11,7 @@ NC='\033[0m'
 echo -e "${BLUE}🧪 Testing All Services (${TEST_TYPE})${NC}"
 
 FAILED=0
-for service in middleware patient-pwa mock-hospital-a mock-hospital-b; do
+for service in middleware patient-pwa defense-dashboard mock-hospital-a mock-hospital-b; do
   if [ -d "$PROJECT_ROOT/packages/$service" ]; then
     echo ""
     echo -e "${GREEN}Testing $service...${NC}"

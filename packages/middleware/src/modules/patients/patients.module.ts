@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PatientsService } from './patients.service';
 import { PatientsController } from './patients.controller';
 import { PatientJwtStrategy } from '../auth/strategies/patient-jwt.strategy';
@@ -12,9 +12,17 @@ import { EmailModule } from '../email/email.module';
   imports: [
     PassportModule.register({ defaultStrategy: 'patient-jwt' }),
     EmailModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'dev_jwt_secret_key',
-      signOptions: { expiresIn: (process.env.JWT_EXPIRATION || '86400') as any },
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret) throw new Error('JWT_SECRET is required');
+        return {
+          secret,
+          signOptions: { expiresIn: (config.get<string>('JWT_EXPIRATION') || '86400') as any },
+        };
+      },
     }),
   ],
   providers: [PatientsService, PatientJwtStrategy, PrismaService],

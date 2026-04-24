@@ -6,6 +6,7 @@ import { DataRequestService } from './data-request.service';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { ConsentService } from '../consent/consent.service';
 import { AuditService } from '../audit/audit.service';
+import { DefenseService } from '../defense/defense.service';
 import { DataRequestStatus, DataType } from './dto/data-request.dto';
 
 describe('DataRequestService', () => {
@@ -28,6 +29,7 @@ describe('DataRequestService', () => {
               findUnique: jest.fn(),
               count: jest.fn(),
               update: jest.fn(),
+              updateMany: jest.fn(),
             },
             patient: {
               findUnique: jest.fn(),
@@ -56,6 +58,12 @@ describe('DataRequestService', () => {
           useValue: {
             get: jest.fn(),
             post: jest.fn(),
+          },
+        },
+        {
+          provide: DefenseService,
+          useValue: {
+            emit: jest.fn(),
           },
         },
       ],
@@ -146,6 +154,42 @@ describe('DataRequestService', () => {
 
       expect(result.status).toBe(DataRequestStatus.PENDING);
       expect(consentService.createConsentRequest).toHaveBeenCalled();
+    });
+
+    it('should require consent for all requested data types before routing', async () => {
+      const patient = { id: 'pat_1', email: 'patient@example.com' };
+      const sourceHospital = { id: 'hosp_1', name: 'Hospital 1' };
+      const targetHospital = { id: 'hosp_2', name: 'Hospital 2' };
+      const consentRequest = { id: 'consent_req_2' };
+
+      prismaService.patient.findUnique.mockResolvedValue(patient as any);
+      prismaService.hospital.findUnique
+        .mockResolvedValueOnce(targetHospital as any)
+        .mockResolvedValueOnce(sourceHospital as any);
+
+      consentService.hasActiveConsent
+        .mockResolvedValueOnce(true)
+        .mockResolvedValueOnce(false);
+      consentService.createConsentRequest.mockResolvedValue(
+        consentRequest as any,
+      );
+
+      const dataRequest = {
+        id: 'data_req_2',
+        ...createDto,
+        status: DataRequestStatus.PENDING,
+        requestedAt: new Date(),
+      };
+
+      prismaService.dataRequest.create.mockResolvedValue(dataRequest as any);
+      prismaService.dataRequest.update.mockResolvedValue(dataRequest as any);
+
+      const result = await service.createDataRequest(createDto, 'hosp_1');
+
+      expect(result.status).toBe(DataRequestStatus.PENDING);
+      expect(consentService.createConsentRequest).toHaveBeenCalledTimes(1);
+      expect(httpService.get).not.toHaveBeenCalled();
+      expect(httpService.post).not.toHaveBeenCalled();
     });
 
     it('should fetch data from target hospital and deliver it to source hospital if consent exists', async () => {
@@ -315,6 +359,33 @@ describe('DataRequestService', () => {
       await expect(service.getDataRequestById('invalid_id')).rejects.toThrow(
         BadRequestException,
       );
+    });
+  });
+
+  describe('failPendingRequestsForConsent', () => {
+    it('should fail pending requests linked to denied consent', async () => {
+      prismaService.dataRequest.findMany.mockResolvedValue([
+        { id: 'req_1', patientId: 'pat_1', sourceHospitalId: 'hosp_1' },
+        { id: 'req_2', patientId: 'pat_2', sourceHospitalId: 'hosp_2' },
+      ]);
+      prismaService.dataRequest.updateMany.mockResolvedValue({ count: 2 });
+
+      const result = await service.failPendingRequestsForConsent('cr_1');
+
+      expect(result).toEqual({ failed: 2 });
+      expect(prismaService.dataRequest.updateMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            consentRequestId: 'cr_1',
+            status: DataRequestStatus.PENDING,
+          }),
+          data: expect.objectContaining({
+            status: DataRequestStatus.FAILED,
+            failureReason: 'Consent request denied by patient',
+          }),
+        }),
+      );
+      expect(auditService.createAuditLog).toHaveBeenCalledTimes(2);
     });
   });
 

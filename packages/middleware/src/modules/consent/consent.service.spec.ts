@@ -3,19 +3,35 @@ import { ConsentService } from './consent.service';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { BadRequestException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { NotificationsService } from '@modules/notifications/notifications.service';
+import { DataRequestService } from '@modules/data-request/data-request.service';
+import { DefenseService } from '@modules/defense/defense.service';
 
 describe('ConsentService', () => {
   let service: ConsentService;
   let prismaService: any;
+  let dataRequestService: any;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ConsentService,
         {
+          provide: DataRequestService,
+          useValue: {
+            resumePendingRequestsForConsent: jest.fn(),
+            failPendingRequestsForConsent: jest.fn(),
+          },
+        },
+        {
           provide: NotificationsService,
           useValue: {
             notifyPatient: jest.fn(),
+          },
+        },
+        {
+          provide: DefenseService,
+          useValue: {
+            emit: jest.fn(),
           },
         },
         {
@@ -48,6 +64,7 @@ describe('ConsentService', () => {
 
     service = module.get<ConsentService>(ConsentService);
     prismaService = module.get(PrismaService) as any;
+    dataRequestService = module.get(DataRequestService) as any;
   });
 
   afterEach(() => {
@@ -220,6 +237,10 @@ describe('ConsentService', () => {
 
       expect(result.status).toBe('denied');
       expect(prismaService.consentRequest.update).toHaveBeenCalled();
+      expect(dataRequestService.failPendingRequestsForConsent).toHaveBeenCalledWith(
+        'cr_1',
+        'Consent request denied by patient',
+      );
     });
   });
 
