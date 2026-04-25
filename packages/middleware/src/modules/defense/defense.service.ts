@@ -374,7 +374,25 @@ export class DefenseService {
     const fixedDemo = await this.prisma.patient.findUnique({
       where: { id: 'patient-001' },
     });
-    if (fixedDemo) return fixedDemo;
+    if (fixedDemo) {
+      const needsIdentityUpdate =
+        fixedDemo.firstName.toLowerCase() !== 'daniel' ||
+        fixedDemo.lastName.toLowerCase() !== 'samuel' ||
+        fixedDemo.externalId !== 'PAT_DEMO_001' ||
+        fixedDemo.email !== 'daniel.samuel@carebridge.local';
+
+      if (!needsIdentityUpdate) return fixedDemo;
+
+      return this.prisma.patient.update({
+        where: { id: 'patient-001' },
+        data: {
+          externalId: 'PAT_DEMO_001',
+          email: 'daniel.samuel@carebridge.local',
+          firstName: 'Daniel',
+          lastName: 'Samuel',
+        },
+      });
+    }
 
     const passwordHash = await bcrypt.hash('demo-password-123', 10);
     return this.prisma.patient
@@ -382,10 +400,10 @@ export class DefenseService {
         data: {
           id: 'patient-001',
           externalId: 'PAT_DEMO_001',
-          email: 'defense.demo.patient@carebridge.local',
+          email: 'daniel.samuel@carebridge.local',
           passwordHash,
-          firstName: 'Defense',
-          lastName: 'Patient',
+          firstName: 'Daniel',
+          lastName: 'Samuel',
         },
       })
       .catch(async () => {

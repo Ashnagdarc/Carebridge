@@ -19,14 +19,16 @@ services:
       - carebridge-network
 
   middleware:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: carebridge-middleware
     environment:
       NODE_ENV: development
       DATABASE_URL: postgresql://carebridge_user:carebridge_dev_password@postgres:5432/carebridge_db
       JWT_SECRET: dev_jwt_secret_key_change_in_production
       PATIENT_APP_URL: http://localhost:3001
-      CORS_ORIGIN: http://localhost:3001,http://127.0.0.1:3001
+      CORS_ORIGIN: http://localhost:3001,http://127.0.0.1:3001,http://localhost:3002,http://127.0.0.1:3002
+      DEFENSE_HOSPITAL_A_ENDPOINT: http://mock-hospital-a:4001
+      DEFENSE_HOSPITAL_B_ENDPOINT: http://mock-hospital-b:4002
       PORT: 3000
     ports:
       - '3000:3000'
@@ -42,7 +44,7 @@ services:
       - carebridge-network
 
   patient-app:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: carebridge-patient-app
     environment:
       NODE_ENV: development
@@ -63,7 +65,7 @@ services:
       - carebridge-network
 
   mock-hospital-a:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: carebridge-mock-hospital-a
     environment:
       NODE_ENV: development
@@ -80,7 +82,7 @@ services:
       - carebridge-network
 
   mock-hospital-b:
-    image: node:18-alpine
+    image: node:20-alpine
     container_name: carebridge-mock-hospital-b
     environment:
       NODE_ENV: development
@@ -90,6 +92,21 @@ services:
       - '4002:4002'
     volumes:
       - ./packages/mock-hospital-b:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    networks:
+      - carebridge-network
+
+  defense-dashboard:
+    image: node:20-alpine
+    container_name: carebridge-defense-dashboard
+    environment:
+      NODE_ENV: development
+    ports:
+      - '3002:3002'
+    volumes:
+      - ./packages/defense-dashboard:/app
       - /app/node_modules
     working_dir: /app
     command: sh -c "npm install && npm run dev"

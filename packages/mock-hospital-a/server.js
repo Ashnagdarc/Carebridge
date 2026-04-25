@@ -29,17 +29,27 @@ const sampleRecords = {
     allergies: [
       { substance: 'Penicillin', severity: 'high', reaction: 'Anaphylaxis' },
       { substance: 'Latex', severity: 'moderate', reaction: 'Rash' },
+      { substance: 'Peanuts', severity: 'high', reaction: 'Respiratory distress' },
+      { substance: 'Shellfish', severity: 'moderate', reaction: 'Hives' },
     ],
     medications: [
       { name: 'Metformin', dosage: '500mg', frequency: 'twice daily' },
       { name: 'Lisinopril', dosage: '10mg', frequency: 'daily' },
+      { name: 'Atorvastatin', dosage: '20mg', frequency: 'nightly' },
+      { name: 'Aspirin', dosage: '81mg', frequency: 'daily' },
+      { name: 'Albuterol Inhaler', dosage: '90mcg', frequency: 'as needed' },
     ],
     diagnoses: [
       { code: 'E11.9', description: 'Type 2 diabetes mellitus' },
       { code: 'I10', description: 'Essential hypertension' },
+      { code: 'E78.5', description: 'Hyperlipidemia, unspecified' },
+      { code: 'J45.909', description: 'Unspecified asthma, uncomplicated' },
     ],
     lab_results: [
       { name: 'HbA1c', value: '7.1', unit: '%', collectedAt: '2026-04-01' },
+      { name: 'LDL Cholesterol', value: '132', unit: 'mg/dL', collectedAt: '2026-03-22' },
+      { name: 'eGFR', value: '92', unit: 'mL/min/1.73m2', collectedAt: '2026-03-22' },
+      { name: 'Fasting Glucose', value: '146', unit: 'mg/dL', collectedAt: '2026-03-22' },
     ],
   },
 };

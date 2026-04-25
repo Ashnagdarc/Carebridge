@@ -20,8 +20,12 @@ export function generateUID(name: string, externalId: string): string {
   const digitsOnly = String(externalId).replace(/\D/g, '');
   const idPart = digitsOnly.slice(-5).padStart(5, '0');
 
-  // Generate 4-digit random suffix
-  const suffix = String(Math.floor(Math.random() * 10000))
+  // Generate deterministic 4-digit suffix so UID is stable across refreshes
+  const hashInput = `${namePrefix}:${String(externalId).toLowerCase()}`;
+  const hashValue = Array.from(hashInput).reduce((acc, char) => {
+    return (acc * 31 + char.charCodeAt(0)) % 10000;
+  }, 0);
+  const suffix = String(hashValue)
     .padStart(4, '0')
     .slice(-4);
 

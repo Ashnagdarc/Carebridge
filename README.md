@@ -394,7 +394,13 @@ See [docs/SECURITY.md](./docs/SECURITY.md) (to be created) for detailed security
 
 ---
 
-## 📄 License & Credits
+## � Ralph Loop Proof
+
+Figure 4.7: Ralph Loop Automation Proof [Insert your Ralph Loop proof screenshot here]
+
+---
+
+## �📄 License & Credits
 
 **CareBridge Middleware** - Secure Health Data Exchange Platform  
 *Last Updated: April 20, 2026*
