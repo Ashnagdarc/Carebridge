@@ -413,7 +413,7 @@ export class DataRequestService {
       // the requester and targetHospitalId for the data holder.
       const responseData = await this.fetchDataFromHospital(
         targetHospital,
-        patient.id,
+        patient.externalId || patient.id,
         dataRequest.dataTypes,
       );
       if (isDefenseDemo) {
@@ -486,6 +486,7 @@ export class DataRequestService {
         dataTypes: dataRequest.dataTypes,
         status: DataRequestStatus.COMPLETED,
         latencyMs,
+        responseData: updatedRequest.responseData,
       });
 
       return this.mapDataRequestToResponse(updatedRequest);

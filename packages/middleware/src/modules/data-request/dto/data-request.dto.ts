@@ -15,8 +15,11 @@ export enum DataType {
   DIAGNOSES = 'diagnoses',
   VITAL_SIGNS = 'vital_signs',
   LAB_RESULTS = 'lab_results',
+  BLOOD_TESTS = 'blood_tests',
+  BLOOD_GROUP = 'blood_group',
   PROCEDURES = 'procedures',
   IMMUNIZATIONS = 'immunizations',
+  HEALTH_HISTORY = 'health_history',
   ALL = 'all',
 }
 

@@ -61,23 +61,22 @@ export class DefenseService {
 
     const patientRef = body?.patientRef || body?.patientId;
     const patient = await this.resolveDemoPatient(patientRef);
-    const patientProfile = await this.resolvePatientProfile(patient.id);
     const selectedTargetHospital = body?.targetHospitalId
       ? await this.prisma.hospital.findUnique({
           where: { id: body.targetHospitalId },
         })
       : null;
 
-    const targetHospital =
-      (selectedTargetHospital && selectedTargetHospital.isActive
-        ? selectedTargetHospital
-        : null) ||
-      (patientProfile.hospitals.find((h) => h.id !== hospitalB.id)?.id
-        ? await this.prisma.hospital.findUnique({
-            where: { id: patientProfile.hospitals.find((h) => h.id !== hospitalB.id)!.id },
-          })
-        : null) ||
-      hospitalA;
+    // For defense demo, Hospital A is the data holder (has patient data)
+    // Hospital B is the requester
+    let targetHospital = selectedTargetHospital && selectedTargetHospital.isActive
+      ? selectedTargetHospital
+      : null;
+
+    if (!targetHospital) {
+      // Default to Hospital A for defense demo
+      targetHospital = hospitalA;
+    }
 
     const dataTypes = this.normalizeDataTypes(body?.dataTypes);
     const purpose =
@@ -264,7 +263,7 @@ export class DefenseService {
       .map((type) => String(type || '').trim().toLowerCase())
       .filter((type) => allowed.has(type));
 
-    return (normalized.length ? normalized : [DataType.ALLERGIES, DataType.MEDICATIONS]) as DataType[];
+    return (normalized.length ? normalized : [DataType.BLOOD_TESTS, DataType.BLOOD_GROUP, DataType.HEALTH_HISTORY]) as DataType[];
   }
 
   private async findPatientByRef(patientRef?: string) {
@@ -284,6 +283,20 @@ export class DefenseService {
     });
     if (byEmail) return byEmail;
 
+    const uidPattern = /^[A-Z]{2}-\d{5}-\d{4}$/;
+    if (uidPattern.test(ref.toUpperCase())) {
+      const uidRef = ref.toUpperCase();
+      const candidates = await this.prisma.patient.findMany({
+        take: 300,
+        orderBy: { createdAt: 'asc' },
+      });
+
+      const matchedByUid = candidates.find(
+        (patient) => this.toPatientUid(patient.firstName, patient.lastName, patient.externalId) === uidRef,
+      );
+      if (matchedByUid) return matchedByUid;
+    }
+
     return this.prisma.patient.findFirst({
       where: {
         OR: [
@@ -293,6 +306,25 @@ export class DefenseService {
       },
       orderBy: { createdAt: 'asc' },
     });
+  }
+
+  private toPatientUid(firstName: string, lastName: string, externalId: string) {
+    const namePrefix = `${String(firstName || '')}${String(lastName || '')}`
+      .replace(/\s+/g, '')
+      .slice(0, 2)
+      .toUpperCase()
+      .padEnd(2, 'X');
+    const digitsOnly = String(externalId || '').replace(/\D/g, '');
+    const idPart = digitsOnly.slice(-5).padStart(5, '0');
+    const hashInput = `${namePrefix}:${String(externalId || '').toLowerCase()}`;
+    const hashValue = Array.from(hashInput).reduce((acc, char) => {
+      return (acc * 31 + char.charCodeAt(0)) % 10000;
+    }, 0);
+    const suffix = String(hashValue)
+      .padStart(4, '0')
+      .slice(-4);
+
+    return `${namePrefix}-${idPart}-${suffix}`;
   }
 
   private async resolvePatientProfile(patientId: string) {
@@ -359,8 +391,17 @@ export class DefenseService {
   }
 
   private async resolveDemoPatient(patientRef?: string) {
-    const matchedByRef = await this.findPatientByRef(patientRef);
-    if (matchedByRef) return matchedByRef;
+    let matchedByRef = await this.findPatientByRef(patientRef);
+    if (matchedByRef) {
+      // Update externalId if patientRef is provided and differs from stored externalId
+      if (patientRef && patientRef !== matchedByRef.externalId) {
+        matchedByRef = await this.prisma.patient.update({
+          where: { id: matchedByRef.id },
+          data: { externalId: patientRef },
+        });
+      }
+      return matchedByRef;
+    }
 
     const danielSamuel = await this.prisma.patient.findFirst({
       where: {
@@ -369,7 +410,16 @@ export class DefenseService {
       },
       orderBy: { createdAt: 'asc' },
     });
-    if (danielSamuel) return danielSamuel;
+    if (danielSamuel) {
+      // Update externalId if patientRef is provided and differs
+      if (patientRef && patientRef !== danielSamuel.externalId) {
+        return this.prisma.patient.update({
+          where: { id: danielSamuel.id },
+          data: { externalId: patientRef },
+        });
+      }
+      return danielSamuel;
+    }
 
     const fixedDemo = await this.prisma.patient.findUnique({
       where: { id: 'patient-001' },

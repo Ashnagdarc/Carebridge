@@ -32,14 +32,50 @@ curl -s -w "\nHTTP %{http_code} TIME %{time_total}s\n" \
 
 ## End-to-End Test Results
 
-| Test Case                        | Status   | Response Time   | Notes                     |
-| -------------------------------- | -------- | --------------- | ------------------------- |
-| UID Registration → QR Generation | ✅ PASS  | 156ms           | PostgreSQL + PWA display  |
-| Hospital B UID Request           | ✅ PASS  | 189ms           | Defense dashboard input   |
-| Consent Request Creation         | ✅ PASS  | 234ms           | WebSocket delivery to PWA |
-| Patient Consent Approval         | ✅ PASS  | 112ms           | PWA approval interface    |
-| Hospital A Data Retrieval        | ✅ PASS  | 267ms           | Mock Express API response |
-| Data Delivery to Hospital B      | ✅ PASS  | Total: 958ms    | Complete E2E workflow     |
+Live timing verification was executed on 25 April 2026 by capturing defense WebSocket events for request `cmoeg6cim003f10md19col06o` and measuring timestamp deltas between consecutive workflow events.
+
+| Workflow Step | Latency | % of Total (3,793ms) | Status |
+| --- | ---: | ---: | --- |
+| `data_request_created` → `consent_request_created` | 65ms | 1.7% | ✅ |
+| `consent_request_created` → `data_request_in_progress` | 1,269ms | 33.5% | ✅ |
+| `data_request_in_progress` → `data_fetch_started` | 1ms | 0.0% | ✅ |
+| `data_fetch_started` → `data_delivery_started` | 1,217ms | 32.1% | ✅ |
+| `data_delivery_started` → `data_request_completed` | 1,241ms | 32.7% | ✅ |
+| Total event-tracked workflow (`created` → `completed`) | 3,793ms | 100% | ✅ |
+
+Additional runtime checks from the same verification window:
+
+- `POST /api/v1/defense/start` returned `latencyMs` values of `2443ms` and `2435ms` across two successful runs.
+- `GET /api/v1/defense/resolve-patient` responded in `24ms` (`HTTP 200 TIME 0.024336s`).
+
+## Backend Test Coverage Evidence
+
+Backend coverage was executed with:
+
+```bash
+npm --prefix packages/middleware run test:cov
+```
+
+Observed summary from the run:
+
+| Metric | Result |
+| --- | ---: |
+| Statements | 19.31% |
+| Branches | 26.96% |
+| Functions | 20.24% |
+| Lines | 19.57% |
+
+Result status:
+
+- ❌ `test:cov` failed (exit code `1`)
+- ❌ Coverage did not meet `85%+`
+
+Primary blockers reported by Jest/TypeScript during the coverage run:
+
+- `consentRequestId` is referenced in `data-request.service.ts` and `defense.service.ts`, but does not exist on Prisma `DataRequest` types
+- `passwordResetToken` is referenced in `patients.service.ts`, but does not exist on the current `PrismaService` client
+
+Because these compile-time errors occur during coverage collection, the reported percentages are partial and not valid for an acceptance claim of `85%+`.
 
 ## Successful Middleware Response
 
@@ -49,7 +85,7 @@ The completed defense run returned the following key result:
 {
   "ok": true,
   "request": {
-    "id": "cmoe5x29k0005vfylpojm1btz",
+    "id": "cmoeg6n3x003t10mdrtr488s9",
     "patientId": "patient-001",
     "sourceHospitalId": "cmoe5svj5000714loj0a6kg0p",
     "targetHospitalId": "cmoe5svgg000614lo0nxfw6ca",
@@ -57,8 +93,8 @@ The completed defense run returned the following key result:
     "purpose": "Emergency referral and continuity of care (defense demo)",
     "status": "completed",
     "failureReason": null,
-    "consentId": "cmoe5x392000bvfyldo14cist",
-    "latencyMs": 2523
+    "consentId": "cmoeg6o36003z10mdx5ojqh4v",
+    "latencyMs": 2435
   },
   "context": {
     "patientId": "patient-001",
@@ -146,4 +182,72 @@ The defense dashboard visualizes the same workflow as a live sequence:
 ## Summary
 
 The simulated defense run passed successfully after the Docker demo hospital endpoints were configured to use internal service names. The completed workflow demonstrates that CareBridge supports consent-first patient data exchange, real-time defense dashboard monitoring, hospital-to-hospital routing, and database-backed audit logging.
+
+## 4.6 Development Challenges and Resolutions
+
+CareBridge development encountered practical implementation challenges common in distributed healthcare middleware systems. The items below are restricted to repository-verifiable evidence and live checks performed in this chapter.
+
+### Challenge 1: Internal Service Routing in Dockerized Demo Flow
+
+**Problem:** The defense flow depends on inter-container HTTP calls between middleware and mock hospitals, which fail if localhost-style endpoints are used inside containers.
+
+**Resolution implemented:**
+
+- `docker-compose.yml` sets middleware demo endpoints to internal service names:
+  - `DEFENSE_HOSPITAL_A_ENDPOINT=http://mock-hospital-a:4001`
+  - `DEFENSE_HOSPITAL_B_ENDPOINT=http://mock-hospital-b:4002`
+- `DefenseService` consumes these endpoint environment variables when upserting demo hospitals.
+
+**Verified outcome:** Defense flow completes successfully in live runs, and data delivery to Mock Hospital B is recorded in the returned response and audit logs.
+
+### Challenge 2: Real-Time Event Ordering and Visibility
+
+**Problem:** The defense dashboard requires a reliable event sequence (`data_request_created` through `data_request_completed`) to present a coherent process timeline.
+
+**Resolution implemented:**
+
+- Middleware emits explicit defense events from `DataRequestService` at each key workflow phase.
+- `DefenseGateway` broadcasts structured events over `/ws/defense`.
+- Defense dashboard subscribes to this stream and orders request events by timestamp before rendering stages.
+
+**Verified outcome:** Live event capture for request `cmoeg6cim003f10md19col06o` showed a complete ordered chain from creation to completion.
+
+### Challenge 3: Consent-Gated Data Exchange Behavior
+
+**Problem:** Data must not be exchanged before patient consent is requested and approved.
+
+**Resolution implemented:**
+
+- On missing active consent, `DataRequestService` creates a consent request and keeps the data request pending.
+- Audit action `data_request_created_pending_consent` is written before routing proceeds.
+- On approval, processing continues to data fetch and delivery.
+
+**Verified outcome:** Audit evidence in this chapter includes both pending-consent and completed-request actions, confirming consent-first behavior.
+
+### Challenge 4: Migration and Schema Drift Control
+
+**Problem:** Maintaining consistent schema evolution across environments is required for reproducible deployments.
+
+**Resolution implemented:**
+
+- Prisma migration workflows are documented (`migrate dev` for development, `migrate deploy` for deployment).
+- Schema and migration SQL include explicit relational constraints (`@unique`, `ON DELETE CASCADE`, `ON DELETE SET NULL`) across core entities.
+
+**Verified outcome:** Current schema/migration artifacts are consistent with constrained relational design for consent, request, and audit data.
+
+### Challenge 5: Scripted Iteration Reliability (Ralph Loop)
+
+**Problem:** Repeating build/test/verify cycles consistently across tasks can become error-prone when done manually.
+
+**Resolution implemented:**
+
+- `ralph-loop.sh` automates task-driven iteration flow (task lookup, checks, iteration boundaries, logging).
+- Runtime logs are written to `.ralph-logs/` for traceability.
+
+**Verified outcome:** Script and logging structure are present and wired to `TASKS.md` task parsing in the current repository.
+
+### Verification Notes and Scope
+
+- This section intentionally excludes non-instrumented metrics (for example, exact failure percentages, concurrent user counts, and fixed-latency guarantees) unless directly measured in this chapter.
+- Performance values reported in Section 4.3 are based on live run output and WebSocket event timestamps captured during verification.
 

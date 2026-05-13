@@ -521,6 +521,11 @@ body {
   min-height: 420px;
 }
 
+.panel-details {
+  max-height: 500px;
+  overflow: auto;
+}
+
 .panel h3 {
   margin: 0 0 10px;
   text-transform: uppercase;
@@ -657,5 +662,69 @@ body {
   .track::before,
   .beam {
     display: none;
+  }
+}
+
+/* Medical Data Display */
+.data-results {
+  display: grid;
+  gap: 12px;
+}
+
+.data-section {
+  background: rgba(52, 199, 89, 0.08);
+  border: 1px solid rgba(52, 199, 89, 0.2);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: auto;
+}
+
+.data-section h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.data-list {
+  display: grid;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.data-item {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  border-left: 2px solid var(--ok);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: var(--muted);
+}
+
+.data-item p {
+  margin: 0;
+  color: #d4e6dc;
+}
+
+.empty {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+@media (max-width: 1024px) {
+  .data-list {
+    max-height: 200px;
+  }
+  
+  .data-section {
+    padding: 10px;
   }
 }
