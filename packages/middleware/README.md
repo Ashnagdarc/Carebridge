@@ -1,211 +1,81 @@
-# CareBridge Middleware API
+# CareBridge Middleware
 
-Backend API service for secure health data exchange between hospitals with patient consent management.
+NestJS backend API for consent-based healthcare data exchange.
 
-## 📋 Overview
+## Stack
 
-- **Framework:** NestJS
-- **Language:** TypeScript
-- **Database:** PostgreSQL with Prisma ORM
-- **Authentication:** OAuth2 + JWT
-- **Port:** 3000
+- NestJS 10
+- Prisma ORM
+- PostgreSQL
+- JWT auth + guards
+- WebSocket gateways (notifications and defense demo)
 
-## 🚀 Quick Start
+## Main Modules
 
-### Prerequisites
-- Node.js 18+
-- PostgreSQL 14+
-- npm 9+
+- `auth`
+- `patients`
+- `hospitals`
+- `consent`
+- `data-request`
+- `audit`
+- `notifications`
+- `defense`
+- `email`
+- `health`
 
-### Installation
+## Local Setup
+
+From this directory:
 
 ```bash
 npm install
-```
-
-### Setup Database
-
-```bash
-# Generate Prisma client
+cp .env.example .env
 npm run prisma:generate
-
-# Run migrations
-npm run prisma:migrate
-
-# Seed test data (optional)
-npm run seed
-```
-
-### Development
-
-```bash
+npx prisma db push
 npm run dev
 ```
 
-Server will start at `http://localhost:3000/api/v1`
+API base URL: `http://localhost:3000/api/v1`
+Swagger UI: `http://localhost:3000/docs`
 
-### Build
-
-```bash
-npm run build
-```
-
-### Testing
+## Scripts
 
 ```bash
-npm run test           # Run all tests
-npm run test:watch    # Watch mode
-npm run test:cov      # With coverage
-```
-
-### Code Quality
-
-```bash
-npm run lint           # Check linting
-npm run lint:fix       # Fix linting issues
-```
-
-## 📁 Project Structure
-
-```
-src/
-├── main.ts                 # Application entry point
-├── app.module.ts          # Root module
-├── modules/
-│   ├── auth/              # Authentication & OAuth2
-│   ├── patients/          # Patient management
-│   ├── consent/           # Consent workflows
-│   ├── hospitals/         # Hospital management
-│   ├── data-request/      # Data routing
-│   ├── audit/             # Audit logging
-│   └── health/            # Health checks
-└── common/                # Shared utilities
-
-prisma/
-├── schema.prisma          # Database schema
-├── seed.ts               # Test data seeding
-└── migrations/           # Database migrations
-```
-
-## 🔑 Environment Variables
-
-See `.env.example` for all available configuration options:
-
-- `DATABASE_URL` - PostgreSQL connection string
-- `JWT_SECRET` - JWT signing secret
-- `JWT_EXPIRATION` - Token expiration (seconds)
-- `CORS_ORIGIN` - CORS allowed origins (comma-separated)
-- `RATE_LIMIT_WINDOW_MS` - Rate limit window (ms)
-- `RATE_LIMIT_MAX_REQUESTS` - Max requests per window
-- `ENFORCE_HTTPS` - Enforce HTTPS (true/false)
-- `PORT` - Server port (default: 3000)
-
-## 📚 API Documentation
-
-See [API.md](../../API.md) for complete endpoint documentation.
-
-### Key Endpoints
-
-- `GET /health` - Health check
-- `POST /auth/signup` - Patient registration
-- `POST /auth/login` - Patient login
-- `GET /patients/profile` - Get patient profile
-- `POST /consent/request` - Request patient consent
-- `GET /consent/requests` - Get pending requests
-- `POST /consent/:id/approve` - Approve consent
-- `GET /audit-logs` - View audit trail
-
-## 🔐 Security
-
-- Password hashing: bcrypt
-- Authentication: JWT tokens
-- Encryption: AES-256-GCM for sensitive data at rest
-- Transport: HTTPS/TLS 1.3+
-- Rate limiting: Implemented on all endpoints
-- CORS: Configurable per environment
-
-## 🗄️ Database Schema
-
-7 core tables:
-- `Patient` - Patient records
-- `Hospital` - Hospital accounts
-- `ConsentRequest` - Consent requests
-- `ConsentRecord` - Active consents & access logs
-- `AuditLog` - Immutable audit trail
-- `HospitalMapping` - Hospital relationships
-- `Session` - User sessions
-
-## 🧪 Testing
-
-```bash
-# Unit tests
-npm run test
-
-# Integration tests
-npm run test:watch
-
-# Coverage report
-npm run test:cov
-```
-
-## 🚢 Deployment
-
-### Docker
-
-```bash
-# Build
-docker build -t carebridge-middleware:latest .
-
-# Run
-docker run -p 3000:3000 \
-  -e DATABASE_URL="postgresql://..." \
-  -e JWT_SECRET="..." \
-  carebridge-middleware:latest
-```
-
-### Environment Setup
-
-1. Create `.env` file with production values
-2. Run database migrations: `npm run prisma:migrate -- --skip-generate`
-3. Start service: `npm start`
-
-## 📝 Database Migrations
-
-### Create a new migration
-
-```bash
-npm run prisma:migrate -- --name your_migration_name
-```
-
-### View migration history
-
-```bash
+npm run dev            # watch mode
+npm run build          # nest build
+npm run start          # run compiled app
+npm run test           # unit/integration tests
+npm run test:cov       # coverage
+npm run lint           # eslint check
+npm run lint:fix       # eslint auto-fix
+npm run prisma:generate
+npm run prisma:dev
+npm run prisma:migrate
 npm run prisma:studio
+npm run seed
 ```
 
-## 🐛 Troubleshooting
+## Environment
 
-**Issue:** Cannot connect to database
-- Verify `DATABASE_URL` is correct
-- Check PostgreSQL is running
-- Ensure credentials are valid
+Primary variables live in `.env.example`, including:
 
-**Issue:** Port 3000 already in use
-- Change `PORT` environment variable
-- Or kill process: `lsof -ti:3000 | xargs kill -9`
+- `DATABASE_URL`
+- `JWT_SECRET`
+- `CORS_ORIGIN`
+- `DEFENSE_HOSPITAL_A_ENDPOINT`
+- `DEFENSE_HOSPITAL_B_ENDPOINT`
+- `ENABLE_WEBSOCKET_NOTIFICATIONS`
+- `ENABLE_PUSH_NOTIFICATIONS`
 
-**Issue:** JWT validation fails
-- Verify `JWT_SECRET` matches across services
-- Check token hasn't expired
+## Testing
 
-## 📞 Support
+Package-level tests live under:
 
-For issues or questions:
-1. Check [PRD.md](../../PRD.md) for architecture overview
-2. Review [API.md](../../API.md) for endpoint details
-3. See logs in `.ralph-logs/` directory
+- `src/**/*.spec.ts`
+- `test/*.e2e-spec.ts`
 
----
+Run all middleware tests:
 
-**Status:** ✅ Ready for Development  
-**Version:** 1.0.0
+```bash
+npm test
+```

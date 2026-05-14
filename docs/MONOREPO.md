@@ -1,111 +1,47 @@
-# CareBridge Monorepo Structure
+# CareBridge Monorepo
 
-> **Architecture Pattern:** Monorepo with independent services  
-> **Repository:** Single `CareBridge` project containing middleware backend, patient PWA, and mock hospital integrations
+## Layout
 
-## 📦 Project Organization
-
-CareBridge is a **single repository** organized as a **monorepo** with distinct, independently-deployable services:
-
-```
+```txt
 CareBridge/
+├── docs/                          # Shared technical documentation
+├── scripts/                       # Root orchestration scripts
 ├── packages/
-│   ├── middleware/      ← Backend API Service (Node.js/NestJS)
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── Dockerfile
-│   │
-│   ├── patient-pwa/     ← Patient-Facing PWA (Next.js)
-│   │   ├── src/
-│   │   ├── package.json
-│   │   └── next.config.mjs
-│   │
-│   ├── mock-hospital-a/ ← Local hospital integration double
-│   └── mock-hospital-b/ ← Local hospital integration double
-│
-├── docs/                ← Shared documentation
-├── scripts/             ← Root-level orchestration scripts
-├── docker-compose.yml   ← Full-stack local dev
-├── package.json         ← Root workspace config
-├── PRD.md              ← Product requirements
-├── TASKS.md            ← Development tasks
-└── ralph-loop.sh       ← Development automation
+│   ├── middleware/                # NestJS API + Prisma + PostgreSQL
+│   ├── patient-pwa/               # Next.js patient-facing PWA
+│   ├── defense-dashboard/         # Vite React dashboard for defense demo
+│   ├── mock-hospital-a/           # Mock source hospital API
+│   └── mock-hospital-b/           # Mock destination hospital API
+├── docker-compose.yml             # Local multi-service stack
+└── package.json                   # npm workspaces + root scripts
 ```
 
-## 🏗️ Service Boundaries
+## Service Responsibilities
 
-### Middleware Service (`packages/middleware/`)
-- **Purpose:** Secure backend API handling authentication, consent, data routing
-- **Technology:** NestJS, PostgreSQL, Prisma
-- **Port:** 3000
-- **Endpoints:** `/api/v1/*`
+- `middleware`: auth, consent, data request routing, notifications, audit, health, hospital integrations.
+- `patient-pwa`: patient login/signup, consent approvals, consent history, dashboard, settings.
+- `defense-dashboard`: dashboard UI consuming defense middleware/ws endpoints.
+- `mock-hospital-a` and `mock-hospital-b`: deterministic APIs used in integration and demo flows.
 
-### Patient App (`packages/patient-app/`)
-- **Purpose:** (Deprecated placeholder) A legacy directory; the active app is `packages/patient-pwa/`
-- **Technology:** N/A
-- **Port:** 3001
-- **Routes:** N/A
+## Default Ports
 
-## 🔄 Service Communication
+- Middleware API: `3000`
+- Patient PWA: `3001`
+- Defense Dashboard: `3002`
+- Mock Hospital A: `4001`
+- Mock Hospital B: `4002`
+- Postgres: `5432`
 
-Services communicate **exclusively via HTTP/HTTPS APIs**:
+## Root Scripts
 
-```
-Patient Browser ← HTTP/HTTPS → Middleware API ← HTTPS → Hospitals
-                                     ↓
-                             PostgreSQL Database
-                          (Consent, Audit Logs)
-```
+- `npm run setup`: installs dependencies and generates baseline local env where applicable.
+- `npm run dev`: starts stack (Docker Compose when Docker is available).
+- `npm run build`: runs each package build script if present.
+- `npm run test`: runs each package test script if present.
+- `npm run lint`: runs each package lint script if present.
 
-## 🚀 Development Workflow
+## Workspace Notes
 
-### Setup (First Time)
-```bash
-npm run setup
-```
-
-### Start All Services
-```bash
-# With Docker Compose
-npm run docker:up
-
-# Or locally (3 terminals)
-npm run dev  # Shows instructions
-```
-
-### Build, Test, Lint
-```bash
-npm run build
-npm run test
-npm run lint
-npm run lint fix  # Fix issues automatically
-```
-
-## 📋 Orchestration Scripts
-
-- `scripts/setup.sh` - Initialize monorepo and all services
-- `scripts/dev.sh` - Start all services (Docker or local)
-- `scripts/build.sh` - Build all services
-- `scripts/test.sh` - Run tests for all services
-- `scripts/lint.sh` - Lint and format check all services
-
-## 🎯 Key Benefits
-
-1. **Single Repository** - One codebase, one git history
-2. **Independent Services** - Deploy separately, scale independently
-3. **Shared Infrastructure** - Common docs, scripts, CI/CD
-4. **Clear Boundaries** - Each service has its own package.json and configs
-5. **API-Based Communication** - No shared databases or internal messaging
-
-## 📊 Deployment
-
-Each service deployed independently:
-
-```bash
-# Middleware
-cd packages/middleware && docker build -t carebridge-middleware:latest .
-```
-
----
-
-**For detailed setup and deployment instructions, see README.md**
+- Packages are managed with npm workspaces via `packages/*`.
+- Each package keeps its own lockfile and scripts.
+- CI and local tooling should execute from repo root unless package-specific behavior is required.
