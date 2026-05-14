@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { BadRequestException } from '@nestjs/common';
 import { DataRequestController } from './data-request.controller';
 import { DataRequestService } from './data-request.service';

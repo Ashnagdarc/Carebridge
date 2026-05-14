@@ -1,3 +1,4 @@
+// CareBridge: Defense demo orchestration and live event streaming.
 import { Module, forwardRef } from '@nestjs/common';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import { DataRequestModule } from '@modules/data-request/data-request.module';

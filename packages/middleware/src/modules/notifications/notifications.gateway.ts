@@ -1,3 +1,4 @@
+// CareBridge: Real-time and push notification infrastructure.
 import { Injectable, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import {

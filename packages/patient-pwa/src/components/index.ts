@@ -1,3 +1,4 @@
+// CareBridge: Reusable UI component implementation.
 // UI Components
 export { Button } from './Button';
 export type { } from './Button';

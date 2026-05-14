@@ -1,3 +1,4 @@
+// CareBridge: Hospital identity and integration endpoint management.
 import { Injectable, BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';

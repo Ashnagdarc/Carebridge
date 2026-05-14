@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 const nextJest = require('next/jest');
 
 const createJestConfig = nextJest({

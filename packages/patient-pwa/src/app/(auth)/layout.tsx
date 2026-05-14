@@ -1,3 +1,4 @@
+// CareBridge: Patient PWA route/layout implementation.
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {

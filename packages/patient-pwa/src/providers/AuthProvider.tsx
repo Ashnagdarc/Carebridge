@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: React context/provider setup for app-wide state.
 
 import React, { createContext, useCallback, useEffect, useState } from "react";
 import { authApi } from "@/lib/api";
@@ -62,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await authApi.login(credentials);
+      // Store profile-only cache for UX hydration; auth cookies remain httpOnly.
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(response));
       setUser(response);
       setIsAuthenticated(true);
@@ -80,6 +82,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const response = await authApi.signup(data);
+      // Signup returns an authenticated session, so we hydrate user immediately.
       localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(response));
 
       setUser(response);
@@ -94,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Clear local state optimistically even if network logout call fails.
     authApi.logout().catch((err) => {
       console.error("Logout API call failed:", err);
     });

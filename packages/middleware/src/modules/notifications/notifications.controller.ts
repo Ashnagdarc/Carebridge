@@ -1,3 +1,4 @@
+// CareBridge: Real-time and push notification infrastructure.
 import {
   BadRequestException,
   Body,

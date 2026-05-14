@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: Reusable UI component implementation.
 
 import * as React from "react";
 

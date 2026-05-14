@@ -1,3 +1,4 @@
+// CareBridge: Consent workflow logic and API wiring.
 import { Module, forwardRef } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { ConsentService } from './consent.service';

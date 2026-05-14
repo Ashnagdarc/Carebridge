@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 module.exports = {
   moduleFileExtensions: ['js', 'json', 'ts'],
   rootDir: 'src',

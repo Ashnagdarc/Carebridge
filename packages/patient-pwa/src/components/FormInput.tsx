@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: Reusable UI component implementation.
 
 import React, { InputHTMLAttributes } from "react";
 

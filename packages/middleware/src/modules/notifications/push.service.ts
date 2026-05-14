@@ -1,3 +1,4 @@
+// CareBridge: Real-time and push notification infrastructure.
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import * as webpush from 'web-push';
@@ -17,6 +18,7 @@ export class PushService {
     auth: string;
     userAgent?: string | null;
   }) {
+    // Endpoint+patient pair is the stable identity for a browser subscription.
     const record = await this.prisma.pushSubscription.upsert({
       where: {
         patientId_endpoint: {
@@ -48,6 +50,7 @@ export class PushService {
   }
 
   async sendToPatient(patientId: string, event: CareBridgeNotificationEvent) {
+    // Feature-flagged so local/dev can run without VAPID setup.
     const isEnabled = process.env.ENABLE_PUSH_NOTIFICATIONS === 'true';
     if (!isEnabled) return;
 
@@ -61,6 +64,7 @@ export class PushService {
     }
 
     if (!this.vapidConfigured) {
+      // web-push keeps global VAPID configuration; set once per process.
       webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
       this.vapidConfigured = true;
     }
@@ -88,6 +92,7 @@ export class PushService {
         } catch (err: any) {
           const statusCode = err?.statusCode;
           if (statusCode === 404 || statusCode === 410) {
+            // Subscription is stale/invalid; prune it to avoid repeated failures.
             await this.removeSubscription(patientId, sub.endpoint);
             return;
           }
@@ -99,4 +104,3 @@ export class PushService {
     );
   }
 }
-

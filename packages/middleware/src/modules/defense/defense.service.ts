@@ -1,3 +1,4 @@
+// CareBridge: Defense demo orchestration and live event streaming.
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { Inject, forwardRef } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
@@ -10,6 +11,7 @@ import { DefenseEvent, DefenseEventType } from './defense.types';
 
 @Injectable()
 export class DefenseService {
+  // Delay is used to make event transitions visible in the defense dashboard.
   private readonly DEFENSE_STEP_DELAY_MS = Math.max(
     0,
     Number(process.env.DEFENSE_DEMO_STEP_DELAY_MS || 1200),
@@ -25,6 +27,7 @@ export class DefenseService {
   ) {}
 
   emit(type: DefenseEventType, payload: DefenseEvent['payload']) {
+    // Centralized event emitter keeps all defense event payloads time-stamped uniformly.
     this.defenseGateway.emitEvent({
       type,
       timestamp: new Date().toISOString(),
@@ -44,6 +47,7 @@ export class DefenseService {
       forceConsent?: boolean;
     },
   ) {
+    // Demo endpoints are token-gated to avoid exposing orchestration APIs publicly.
     this.assertDemoToken(token);
 
     const hospitalA = await this.upsertDemoHospital({
@@ -83,6 +87,7 @@ export class DefenseService {
       body?.purpose ||
       'Emergency referral and continuity of care (defense demo)';
 
+    // By default we revoke active consent so the demo always shows consent creation.
     const shouldForceConsent = body?.forceConsent !== false;
     if (shouldForceConsent) {
       await this.prisma.consentRecord.updateMany({
@@ -97,6 +102,7 @@ export class DefenseService {
       });
     }
 
+    // Hospital B acts as requester, Hospital A acts as data holder in the demo narrative.
     const initialRequest = await this.dataRequestService.createDataRequest(
       {
         patientId: patient.id,
@@ -108,6 +114,7 @@ export class DefenseService {
       hospitalB.id,
     );
 
+    // Optional auto-approve mode enables one-click end-to-end walkthroughs.
     const shouldAutoApprove = body?.autoApprove === true;
     if (shouldAutoApprove) {
       const pendingLink = await this.prisma.dataRequest.findUnique({
@@ -142,6 +149,7 @@ export class DefenseService {
       consentRequestId?: string;
     },
   ) {
+    // Accept either explicit consentRequestId or derive it from a dataRequest.
     this.assertDemoToken(token);
 
     let consentRequestId = String(body?.consentRequestId || '').trim();
@@ -226,6 +234,7 @@ export class DefenseService {
   }
 
   async resolvePatient(token?: string, patientRef?: string) {
+    // Resolve by multiple identifiers so demo input can be UID, email, name, or internal ID.
     this.assertDemoToken(token);
 
     const patient = await this.findPatientByRef(patientRef);
@@ -258,6 +267,7 @@ export class DefenseService {
   }
 
   private normalizeDataTypes(input?: string[]): DataType[] {
+    // Any unknown types are dropped; fallback ensures the demo remains executable.
     const allowed = new Set<string>(Object.values(DataType));
     const normalized = (input || [])
       .map((type) => String(type || '').trim().toLowerCase())
@@ -283,6 +293,7 @@ export class DefenseService {
     });
     if (byEmail) return byEmail;
 
+    // Support human-readable UID form used in presentations.
     const uidPattern = /^[A-Z]{2}-\d{5}-\d{4}$/;
     if (uidPattern.test(ref.toUpperCase())) {
       const uidRef = ref.toUpperCase();

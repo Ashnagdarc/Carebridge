@@ -1,3 +1,4 @@
+// CareBridge: Audit trail capture and query functionality.
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@src/common/prisma/prisma.service';
 import {

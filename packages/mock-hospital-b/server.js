@@ -1,13 +1,16 @@
+// CareBridge: Mock destination hospital API used in integration and demo flows.
 const express = require('express');
 
 const app = express();
 const port = Number(process.env.PORT || 4002);
 const expectedToken = process.env.MOCK_HOSPITAL_TOKEN || 'mock-hospital-token';
+// In-memory store is intentional for demo/test determinism.
 const deliveries = [];
 
 app.use(express.json({ limit: '1mb' }));
 
 function requireBearerToken(req, res, next) {
+  // Mirror middleware's bearer requirement for integration realism.
   if (!isAuthorized(req)) {
     return res.status(401).json({
       error: 'unauthorized',
@@ -26,12 +29,14 @@ function isAuthorized(req) {
 }
 
 function validateDeliveryPayload(payload) {
+  // Minimal contract check; deeper schema validation belongs in middleware.
   const { patientId, sourceHospital, dataTypes, data } = payload || {};
 
   return Boolean(patientId && sourceHospital && Array.isArray(dataTypes) && data);
 }
 
 function createDelivery(payload) {
+  // Delivery IDs are sequential to keep assertions predictable in tests.
   const delivery = {
     id: `delivery-${deliveries.length + 1}`,
     patientId: payload.patientId,

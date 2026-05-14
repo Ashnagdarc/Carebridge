@@ -1,3 +1,4 @@
+// CareBridge: Client-side API and utility logic.
 /**
  * Form Validation Utilities
  * Apple HIG compliant validation with clear error messages

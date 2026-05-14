@@ -1,3 +1,4 @@
+// CareBridge: Audit trail capture and query functionality.
 import {
   Injectable,
   NestInterceptor,

@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: Patient PWA route/layout implementation.
 
 import { HoverExpand } from "@/components/unlumen-ui/hover-expand";
 

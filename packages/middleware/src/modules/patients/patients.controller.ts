@@ -1,3 +1,4 @@
+// CareBridge: Patient account, profile, and session management.
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Request, Response, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { Response as ExpressResponse } from 'express';

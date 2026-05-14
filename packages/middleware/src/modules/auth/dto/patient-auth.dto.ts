@@ -1,3 +1,4 @@
+// CareBridge: Type-safe DTO contracts used for request/response validation.
 import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class PatientSignupDto {

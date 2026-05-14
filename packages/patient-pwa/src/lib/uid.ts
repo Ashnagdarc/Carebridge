@@ -1,3 +1,4 @@
+// CareBridge: Client-side API and utility logic.
 /**
  * Patient UID Utility Functions
  * Generates and formats patient UIDs (Unique Identifiers)

@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { NotificationsGateway } from './notifications.gateway';
 import { JwtService } from '@nestjs/jwt';
 

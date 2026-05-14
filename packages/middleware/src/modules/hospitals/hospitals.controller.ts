@@ -1,3 +1,4 @@
+// CareBridge: Hospital identity and integration endpoint management.
 import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { HospitalsService } from './hospitals.service';

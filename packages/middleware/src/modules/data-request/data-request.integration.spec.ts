@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { of } from 'rxjs';
 import { AuditService } from '../audit/audit.service';
 import { ConsentService } from '../consent/consent.service';

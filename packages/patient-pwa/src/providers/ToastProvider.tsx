@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: React context/provider setup for app-wide state.
 
 import React, { useState, useCallback } from "react";
 

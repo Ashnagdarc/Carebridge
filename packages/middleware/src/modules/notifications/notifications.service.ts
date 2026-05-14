@@ -1,3 +1,4 @@
+// CareBridge: Real-time and push notification infrastructure.
 import { Injectable, Logger } from '@nestjs/common';
 import { NotificationsGateway } from './notifications.gateway';
 import { CareBridgeNotificationEvent } from './notifications.types';
@@ -13,7 +14,9 @@ export class NotificationsService {
   ) {}
 
   notifyPatient(patientId: string, event: CareBridgeNotificationEvent) {
+    // WebSocket is best-effort real-time path for connected clients.
     this.gateway.notifyPatient(patientId, event);
+    // Push runs in background; failure should not block primary request lifecycle.
     void this.pushService.sendToPatient(patientId, event).catch((error) => {
       this.logger.warn(
         `Push notification failed for patient ${patientId}: ${error instanceof Error ? error.message : String(error)}`,

@@ -1,3 +1,4 @@
+// CareBridge: Patient account, profile, and session management.
 import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -333,9 +334,11 @@ export class PatientsService {
     });
 
     if (!patient) {
+      // Silent success prevents account-enumeration via password reset endpoint.
       return;
     }
 
+    // Invalidate prior active reset links before issuing a new one.
     await this.prisma.passwordResetToken.updateMany({
       where: {
         patientId: patient.id,
@@ -347,6 +350,7 @@ export class PatientsService {
       },
     });
 
+    // Store only a hash in DB so leaked rows cannot be used to reset passwords.
     const token = randomBytes(32).toString('base64url');
     const tokenHash = this.hashResetToken(token);
     const expiresAt = new Date(Date.now() + this.passwordResetTtlMs());
@@ -395,6 +399,7 @@ export class PatientsService {
       data: { usedAt: new Date() },
     });
 
+    // Reset implies global session revocation for account safety.
     await this.logoutAll(resetToken.patientId);
   }
 
@@ -488,6 +493,7 @@ export class PatientsService {
   }
 
   private generateTokens(payload: any) {
+    // Access token carries profile claims; refresh token stays minimal.
     const accessToken = this.jwtService.sign(
       {
         patientId: payload.patientId,
@@ -514,6 +520,7 @@ export class PatientsService {
   }
 
   private generatePatientUID(): string {
+    // Human-readable UID used as cross-facility patient reference.
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let uid = '';
     for (let i = 0; i < 12; i++) {
@@ -523,10 +530,12 @@ export class PatientsService {
   }
 
   private hashResetToken(token: string): string {
+    // One-way hash protects tokens at rest.
     return createHash('sha256').update(token).digest('hex');
   }
 
   private hashSessionToken(token: string): string {
+    // Session table stores token hashes instead of raw JWTs.
     return createHash('sha256').update(token).digest('hex');
   }
 

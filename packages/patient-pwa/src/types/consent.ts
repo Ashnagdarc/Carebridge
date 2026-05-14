@@ -1,3 +1,4 @@
+// CareBridge: Shared frontend TypeScript domain types.
 /**
  * Consent Management Types
  * Interfaces for consent requests, records, and related operations

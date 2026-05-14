@@ -1,3 +1,4 @@
+// CareBridge: Real-time and push notification infrastructure.
 import { Module } from '@nestjs/common';
 import { AuthModule } from '@modules/auth/auth.module';
 import { NotificationsGateway } from './notifications.gateway';

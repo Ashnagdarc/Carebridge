@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: React context/provider setup for app-wide state.
 
 import React, { createContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -29,6 +30,7 @@ function apiUrl() {
 }
 
 function wsOriginFromApi(api: string) {
+  // Keep WS origin derivation in one place so env overrides remain predictable.
   const origin = api.replace(/\/api\/v\d+$/, "").replace(/\/$/, "");
   const isHttps = origin.startsWith("https://");
   if (origin.startsWith("http://")) return origin.replace("http://", "ws://");
@@ -49,6 +51,7 @@ type ConsentRequestCreatedEvent = {
 };
 
 function isConsentRequestCreatedEvent(value: unknown): value is ConsentRequestCreatedEvent {
+  // Runtime guard protects UI from malformed socket payloads.
   if (!value || typeof value !== "object") return false;
   const record = value as Record<string, unknown>;
   if (record.type !== "consent_request_created") return false;
@@ -140,6 +143,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   };
 
   const disconnect = useCallback(() => {
+    // Ensure reconnect timer and stale handlers are always cleaned up together.
     clearReconnect();
     reconnectAttemptRef.current = 0;
     if (socketRef.current) {
@@ -160,6 +164,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     if (!isAuthenticated) return;
     if (typeof window === "undefined") return;
 
+    // Support explicit WS endpoint override while defaulting to API-derived origin.
     const wsPath = process.env.NEXT_PUBLIC_WS_NOTIFICATIONS_PATH || "/ws/notifications";
     const wsBase = process.env.NEXT_PUBLIC_WS_URL || wsOriginFromApi(apiUrl());
     const url = `${wsBase}${wsPath}`;
@@ -201,6 +206,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
         socketRef.current = null;
         if (!isAuthenticated) return;
         const attempt = reconnectAttemptRef.current++;
+        // Exponential backoff prevents tight reconnect loops on server outages.
         const delay = Math.min(30000, 1000 * Math.pow(2, attempt));
         clearReconnect();
         reconnectTimerRef.current = window.setTimeout(() => {
@@ -253,6 +259,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       return;
     }
 
+    // Push depends on an active service worker registration in this origin scope.
     const registration = await navigator.serviceWorker.getRegistration();
     if (!registration) {
       addToast("Service worker not active (enable ENABLE_PUSH_IN_DEV=true for local dev)", "warning");
@@ -288,6 +295,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
       setPushEnabled(false);
       return;
     }
+    // Unsubscribe locally and notify backend so stale endpoints are removed.
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
       try {

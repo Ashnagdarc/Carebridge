@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { Test, TestingModule } from '@nestjs/testing';
 import { JwtService } from '@nestjs/jwt';
 import { BadRequestException, UnauthorizedException, ConflictException } from '@nestjs/common';

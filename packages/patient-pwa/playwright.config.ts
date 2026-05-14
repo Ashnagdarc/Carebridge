@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({

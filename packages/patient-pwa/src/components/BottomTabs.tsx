@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: Reusable UI component implementation.
 
 import React, { useMemo } from "react";
 import { TabNavigation, TabItem } from "@/components/TabNavigation";

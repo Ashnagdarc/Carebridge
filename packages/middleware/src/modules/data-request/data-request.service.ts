@@ -1,3 +1,4 @@
+// CareBridge: Hospital-to-hospital data request lifecycle handling.
 import {
   Injectable,
   BadRequestException,
@@ -23,6 +24,7 @@ import {
 
 @Injectable()
 export class DataRequestService {
+  // External hospital calls are bounded so routing failures fail fast.
   private readonly REQUEST_TIMEOUT_MS = 10000; // 10 seconds
   private readonly DEFENSE_STEP_DELAY_MS = Math.max(
     0,
@@ -46,6 +48,7 @@ export class DataRequestService {
   ) {}
 
   async resumePendingRequestsForConsent(consentRequestId: string) {
+    // Called after approval to continue previously blocked requests.
     if (!consentRequestId) return { resumed: 0 };
 
     const pending = await this.prisma.dataRequest.findMany({
@@ -67,6 +70,7 @@ export class DataRequestService {
     consentRequestId: string,
     reason = 'Consent request denied by patient',
   ) {
+    // Called after denial to close out blocked requests consistently.
     if (!consentRequestId) return { failed: 0 };
 
     const pending = await this.prisma.dataRequest.findMany({
@@ -129,6 +133,7 @@ export class DataRequestService {
   }
 
   async resumeDataRequest(dataRequestId: string): Promise<DataRequestResponseDto> {
+    // Rehydrate request context and route as if it were newly authorized.
     const dataRequest = await this.prisma.dataRequest.findUnique({
       where: { id: dataRequestId },
     });
@@ -235,7 +240,7 @@ export class DataRequestService {
       throw new BadRequestException(`Source hospital not found`);
     }
 
-    // Create data request record in PENDING status
+    // Persist first so we have an auditable request ID even if consent is missing.
     const startTime = Date.now();
     let consentId: string | null = null;
 
@@ -263,8 +268,7 @@ export class DataRequestService {
     });
 
     try {
-      // Check if patient has active consent for source hospital
-      // For data requests, all requested dataTypes must be consented
+      // Consent is all-or-nothing for requested scopes: every type must pass.
       const consentChecks = await Promise.all(
         dto.dataTypes.map((dataType) =>
           this.consentService.hasActiveConsent(
@@ -277,7 +281,7 @@ export class DataRequestService {
       const hasConsent = consentChecks.every(Boolean);
 
       if (!hasConsent) {
-        // Create consent request if not already consented
+        // Missing consent: stop here, open consent workflow, and return pending.
         const consentRequest = await this.consentService.createConsentRequest({
           patientId: dto.patientId,
           requestingHospitalId: sourceHospitalId,
@@ -285,7 +289,7 @@ export class DataRequestService {
           description: dto.purpose || `Data request: ${dto.dataTypes.join(', ')}`,
         });
 
-        // Update data request with pending consent
+        // Keep request resumable by linking to the consent request ID.
         await this.prisma.dataRequest.update({
           where: { id: dataRequest.id },
           data: {
@@ -296,7 +300,7 @@ export class DataRequestService {
           },
         });
 
-        // Audit log
+        // Explicit audit event proves consent-first behavior.
         await this.auditService.createAuditLog({
           action: 'data_request_created_pending_consent',
           resourceType: 'data_request',

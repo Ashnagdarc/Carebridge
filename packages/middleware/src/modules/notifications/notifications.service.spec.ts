@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotificationsService } from './notifications.service';
 import { NotificationsGateway } from './notifications.gateway';

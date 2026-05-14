@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { consentApi } from "@/lib/api";
 
 // Mock fetch

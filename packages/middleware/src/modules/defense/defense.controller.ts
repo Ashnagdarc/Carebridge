@@ -1,3 +1,4 @@
+// CareBridge: Defense demo orchestration and live event streaming.
 import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { DefenseService } from './defense.service';
 

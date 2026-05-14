@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: Reusable UI component implementation.
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useReducedMotion, type Transition } from 'motion/react';

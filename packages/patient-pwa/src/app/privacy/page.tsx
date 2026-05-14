@@ -1,3 +1,4 @@
+// CareBridge: Patient PWA route/layout implementation.
 export default function PrivacyPage() {
   const sections = [
     {

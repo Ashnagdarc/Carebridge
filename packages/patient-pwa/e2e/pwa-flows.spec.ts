@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { expect, test, type Page } from '@playwright/test';
 import { installAuthedBootstrapMocks, installUnauthedBootstrapMocks } from './helpers';
 

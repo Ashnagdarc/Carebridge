@@ -1,3 +1,4 @@
+// CareBridge: Patient account, profile, and session management.
 import { Module } from '@nestjs/common';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';

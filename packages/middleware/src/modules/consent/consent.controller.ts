@@ -1,3 +1,4 @@
+// CareBridge: Consent workflow logic and API wiring.
 import {
   Controller,
   Post,

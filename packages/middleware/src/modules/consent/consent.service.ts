@@ -1,3 +1,4 @@
+// CareBridge: Consent workflow logic and API wiring.
 import {
   Injectable,
   BadRequestException,
@@ -61,10 +62,10 @@ export class ConsentService {
       );
     }
 
-    // Generate approval code for patient verification
+    // Approval code supports out-of-band confirmation channels.
     const approvalCode = this.generateApprovalCode();
 
-    // Calculate expiry date (default 30 days from now)
+    // Default to a bounded approval window to avoid perpetual pending requests.
     const expiresAt = dto.expiresAt
       ? new Date(dto.expiresAt)
       : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
@@ -98,6 +99,7 @@ export class ConsentService {
             consentRequest.requestingHospital?.name ||
             consentRequest.requestingHospitalId,
         },
+        // Data type is stored as comma-delimited scopes for now.
         scopes: (consentRequest.dataType || '')
           .split(',')
           .map((scope) => scope.trim())
@@ -125,6 +127,7 @@ export class ConsentService {
     consentRequestId: string,
     patientId: string,
   ): Promise<void> {
+    // Shared ownership guard used by patient-facing endpoints.
     const request = await this.prisma.consentRequest.findUnique({
       where: { id: consentRequestId },
       select: { patientId: true },
@@ -165,7 +168,7 @@ export class ConsentService {
       );
     }
 
-    // Verify approval code if the caller is using the out-of-band approval path.
+    // Approval code is optional because authenticated in-app approval can skip it.
     if (dto.approvalCode && consentRequest.approvalCode !== dto.approvalCode) {
       throw new UnauthorizedException('Invalid approval code');
     }
@@ -195,7 +198,7 @@ export class ConsentService {
       },
     });
 
-    // Create consent record to track this approval
+    // Approved requests materialize into active consent records.
     await this.prisma.consentRecord.create({
       data: {
         consentRequestId,
@@ -218,6 +221,7 @@ export class ConsentService {
       status: 'approved',
     });
 
+    // Resume any data requests that were blocked on this consent decision.
     await this.dataRequestService.resumePendingRequestsForConsent(consentRequestId);
 
     return this.mapConsentRequestToResponse(updated);
@@ -267,6 +271,7 @@ export class ConsentService {
       },
     });
 
+    // Denial should proactively fail blocked requests to prevent silent hangs.
     await this.dataRequestService.failPendingRequestsForConsent(
       consentRequestId,
       'Consent request denied by patient',

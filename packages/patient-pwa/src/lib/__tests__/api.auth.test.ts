@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { authApi } from "@/lib/api";
 
 global.fetch = jest.fn();

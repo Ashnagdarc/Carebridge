@@ -1,3 +1,4 @@
+// CareBridge: Defense demo orchestration and live event streaming.
 import { Injectable, Logger } from '@nestjs/common';
 import {
   OnGatewayConnection,

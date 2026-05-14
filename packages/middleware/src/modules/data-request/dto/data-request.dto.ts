@@ -1,3 +1,4 @@
+// CareBridge: Type-safe DTO contracts used for request/response validation.
 import { IsString, IsOptional, IsArray, IsEnum } from 'class-validator';
 
 export enum DataRequestStatus {

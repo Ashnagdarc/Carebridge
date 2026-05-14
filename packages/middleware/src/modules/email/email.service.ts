@@ -1,3 +1,4 @@
+// CareBridge: Email delivery plumbing for account and security flows.
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 
 interface SendEmailInput {

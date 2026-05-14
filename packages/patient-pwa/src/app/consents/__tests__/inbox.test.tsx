@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import React from "react";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 

@@ -1,3 +1,4 @@
+// CareBridge: Mock source hospital API used in integration and demo flows.
 const express = require('express');
 
 const app = express();
@@ -7,6 +8,7 @@ const expectedToken = process.env.MOCK_HOSPITAL_TOKEN || 'mock-hospital-token';
 app.use(express.json());
 
 function requireBearerToken(req, res, next) {
+  // Keep auth surface minimal: every clinical-data endpoint shares this guard.
   if (!isAuthorized(req)) {
     return res.status(401).json({
       error: 'unauthorized',
@@ -18,6 +20,7 @@ function requireBearerToken(req, res, next) {
 }
 
 function isAuthorized(req) {
+  // Allow case-insensitive "Bearer" and strip only the prefix.
   const authorization = req.header('authorization') || '';
   const token = authorization.replace(/^Bearer\s+/i, '');
 
@@ -71,6 +74,7 @@ const sampleRecords = {
 };
 
 function pickDataTypes(record, dataTypes) {
+  // Preserve response shape by returning an empty list for unknown data types.
   return dataTypes.reduce((selected, dataType) => {
     selected[dataType] = record[dataType] || [];
     return selected;
@@ -204,6 +208,7 @@ function generateRealisticPatientData(patientId) {
 }
 
 function buildPatientDataResponse(patientId, requestedDataTypes) {
+  // Known demo patient gets a fixed record; others are generated deterministically.
   const record = sampleRecords[patientId] || generateRealisticPatientData(patientId);
 
   const requestedTypes = String(requestedDataTypes || '')

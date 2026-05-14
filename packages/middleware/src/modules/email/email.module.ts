@@ -1,3 +1,4 @@
+// CareBridge: Email delivery plumbing for account and security flows.
 import { Module } from '@nestjs/common';
 import { EmailService } from './email.service';
 

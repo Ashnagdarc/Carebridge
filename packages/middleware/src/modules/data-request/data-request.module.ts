@@ -1,3 +1,4 @@
+// CareBridge: Hospital-to-hospital data request lifecycle handling.
 import { Module, forwardRef } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { DataRequestService } from './data-request.service';

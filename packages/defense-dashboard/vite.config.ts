@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 

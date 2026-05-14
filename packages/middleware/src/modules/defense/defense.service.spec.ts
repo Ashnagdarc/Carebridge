@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { Test, TestingModule } from '@nestjs/testing';
 import { UnauthorizedException } from '@nestjs/common';
 import { DefenseService } from './defense.service';

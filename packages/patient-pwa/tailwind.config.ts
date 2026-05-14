@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 import type { Config } from "tailwindcss";
 
 const config: Config = {

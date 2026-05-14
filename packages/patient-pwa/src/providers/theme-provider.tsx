@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: React context/provider setup for app-wide state.
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";

@@ -1,3 +1,4 @@
+// CareBridge: Type-safe DTO contracts used for request/response validation.
 import { IsString, IsOptional, IsDateString, IsArray } from 'class-validator';
 
 export class CreateAuditLogDto {

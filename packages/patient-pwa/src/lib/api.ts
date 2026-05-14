@@ -1,3 +1,4 @@
+// CareBridge: Client-side API and utility logic.
 import {
   LoginRequest,
   SignupRequest,
@@ -19,6 +20,7 @@ import {
 
 const API_ORIGIN = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000').replace(/\/$/, '');
 const API_VERSION = process.env.NEXT_PUBLIC_API_VERSION || 'v1';
+// Accept either raw origin (http://host:3000) or already-versioned base (/api/v1).
 const API_URL = /\/api\/v\d+$/.test(API_ORIGIN)
   ? API_ORIGIN
   : `${API_ORIGIN}/api/${API_VERSION}`;
@@ -121,6 +123,7 @@ interface BackendAuditLogListResponse {
 }
 
 async function readError(response: Response, fallback: string): Promise<Error> {
+  // Backend sometimes returns string or string[] messages; normalize to one message.
   try {
     const payload = await response.json();
     const message = Array.isArray(payload.message)
@@ -143,6 +146,7 @@ async function safeFetch(url: string, init: RequestInit, fallback: string): Prom
     return await fetch(url, init);
   } catch (error) {
     if (isNetworkError(error)) {
+      // Attach a concrete local troubleshooting hint for developer UX.
       throw new Error(`${fallback}: cannot reach API (${API_URL}). Is the middleware running on port 3000?`);
     }
     throw error;
@@ -150,6 +154,7 @@ async function safeFetch(url: string, init: RequestInit, fallback: string): Prom
 }
 
 function unwrapResponse<T>(payload: ApiResponse<T> | T): T {
+  // Support both enveloped responses ({data}) and direct payloads.
   if (
     payload &&
     typeof payload === 'object' &&
@@ -238,6 +243,7 @@ function hospitalFromBackend(
 }
 
 function normalizeRequestStatus(status: BackendConsentRequest['status']): ConsentRequest['status'] {
+  // Backend may send either "denied" or legacy "rejected".
   return status === 'rejected' ? 'denied' : status;
 }
 
@@ -325,7 +331,7 @@ export const authApi = {
       await response.json()
     );
 
-    // Cookie-auth: backend sets httpOnly cookies; frontend only needs the patient profile.
+    // Cookie-auth: backend sets httpOnly cookies; frontend keeps only display profile.
     if (result && typeof result === 'object' && 'patient' in result) {
       return mapPatientAuthResponse(result as BackendPatientAuthResponse);
     }

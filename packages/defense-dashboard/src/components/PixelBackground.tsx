@@ -1,3 +1,4 @@
+// CareBridge: Defense dashboard client implementation.
 import React from 'react';
 
 type Pattern = 'center' | 'top' | 'bottom' | 'left' | 'right';

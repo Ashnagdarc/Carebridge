@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { expect, test } from '@playwright/test';
 import {
   expectNoHorizontalOverflow,

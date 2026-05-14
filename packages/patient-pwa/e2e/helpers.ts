@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 import type { Page, Route } from '@playwright/test';
 
 type LoginResponse = {

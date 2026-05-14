@@ -1,3 +1,4 @@
+// CareBridge: Health/readiness endpoints and checks.
 import { Injectable } from '@nestjs/common';
 
 @Injectable()

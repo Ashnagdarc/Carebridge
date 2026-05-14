@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import React from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ConsentRequestCard } from "@/components/ConsentRequestCard";

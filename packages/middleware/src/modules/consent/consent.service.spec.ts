@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConsentService } from './consent.service';
 import { PrismaService } from '@src/common/prisma/prisma.service';

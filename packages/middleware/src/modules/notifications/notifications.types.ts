@@ -1,3 +1,4 @@
+// CareBridge: Real-time and push notification infrastructure.
 export type ConsentRequestCreatedNotification = {
   type: 'consent_request_created';
   data: {

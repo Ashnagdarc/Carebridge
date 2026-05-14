@@ -1,3 +1,4 @@
+// CareBridge: Defense demo orchestration and live event streaming.
 export type DefenseEventType =
   | 'data_request_created'
   | 'consent_request_created'

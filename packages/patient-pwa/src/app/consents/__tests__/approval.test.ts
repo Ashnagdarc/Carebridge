@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import React from "react";
 
 // Mock next/navigation

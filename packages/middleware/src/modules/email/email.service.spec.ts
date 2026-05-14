@@ -1,3 +1,4 @@
+// CareBridge: Test coverage for this module behavior.
 import { ServiceUnavailableException } from '@nestjs/common';
 import { EmailService } from './email.service';
 

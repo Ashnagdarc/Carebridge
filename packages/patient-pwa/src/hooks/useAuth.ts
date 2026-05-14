@@ -1,4 +1,5 @@
 'use client';
+// CareBridge: Custom React hook for shared client behavior.
 
 import { useContext } from 'react';
 import { AuthContext } from '@/providers/AuthProvider';

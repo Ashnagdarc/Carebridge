@@ -1,3 +1,4 @@
+// CareBridge: Patient PWA route/layout implementation.
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/providers/AuthProvider";

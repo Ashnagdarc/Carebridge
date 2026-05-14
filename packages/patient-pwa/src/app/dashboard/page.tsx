@@ -1,4 +1,5 @@
 "use client";
+// CareBridge: Patient PWA route/layout implementation.
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";

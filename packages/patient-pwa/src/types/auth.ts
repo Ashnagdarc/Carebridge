@@ -1,3 +1,4 @@
+// CareBridge: Shared frontend TypeScript domain types.
 // Authentication types and interfaces
 
 export interface PatientAuthResponse {

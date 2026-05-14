@@ -1,3 +1,4 @@
+// CareBridge: Defense dashboard client implementation.
 import { useEffect, useMemo, useState } from "react";
 import PixelBackground from "./components/PixelBackground";
 

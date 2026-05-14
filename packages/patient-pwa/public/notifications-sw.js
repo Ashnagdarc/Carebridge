@@ -1,3 +1,4 @@
+// CareBridge: CareBridge application source file.
 /* global self */
 
 function buildNotificationOptions(payload) {
